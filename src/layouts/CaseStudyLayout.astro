@@ -73,18 +73,4 @@ const title = `${project.title} — ${project.subtitle} | Shreyas`;
     <slot />
   </article>
 
-  <!-- Limitations -->
-  {false && (
-    <section class="container-article pb-12">
-      <h2 class="text-base font-semibold font-mono mb-3" style="color: var(--text-muted);">Known limitations</h2>
-      <ul class="space-y-1.5">
-        {project.limitations.map(l => (
-          <li class="flex items-start gap-2 text-sm" style="color: var(--text-muted);">
-            <span class="mt-1 shrink-0" style="color: var(--border);">—</span>
-            {l}
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
 </BaseLayout>

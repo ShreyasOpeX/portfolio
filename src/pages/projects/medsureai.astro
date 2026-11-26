@@ -107,13 +107,6 @@ const project = getProjectBySlug('medsureai')!;
     Ollama runs locally, keeping embedding generation and foundation inference private with predictable cost. Groq provides high-quality cloud inference for tasks where model quality matters most — critique generation during self-reflection and drug formulary reasoning — without requiring a large local model for every workload.
   </p>
 
-  {false && <>
-  <h2>Important limitations</h2>
-  <p>
-    MediSureAI is not a clinically validated medical diagnosis system. Its responses are decision-support material and must not replace professional medical judgment. Local Ollama inference requires sufficient hardware. The Groq dependency introduces a cloud call for specific workloads. Confidence calibration is heuristic — it reflects internal scoring, not empirically measured accuracy.
-  </p>
-  </>}
-
   <h2>Research context</h2>
   <p>
     The project was presented at SYNERGY 2026 (IC-SIIT). A forthcoming publication is described in Scopus-indexed proceedings through Taylor &amp; Francis / CRC Press. Final indexing is pending.

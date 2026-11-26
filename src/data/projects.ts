@@ -14,7 +14,6 @@ export interface ProjectMeta {
   repositoryLinkEnabled: boolean;
   architecture: string;
   engineeringHighlights: string[];
-  limitations: string[];
   sortOrder: number;
 }
 
@@ -43,13 +42,6 @@ export const projects: ProjectMeta[] = [
       'Independent audit consumer group for separation of concerns',
       'Versioned screening, scoring and decision policies',
     ],
-    limitations: [
-      'Uses deterministic/synthetic screening rules and case data',
-      'Does not use an LLM for risk scoring',
-      'Does not perform actual regulatory SAR submission',
-      'In-memory rate limiter is per-instance, not cluster-wide',
-      'HTTP Basic authentication in reference implementation',
-    ],
     sortOrder: 1,
   },
   {
@@ -76,11 +68,6 @@ export const projects: ProjectMeta[] = [
       'Role-based access: PATIENT, DOCTOR, ADMIN',
       'Confidence calibration and guardrails',
     ],
-    limitations: [
-      'Not a clinically validated medical diagnosis system',
-      'Local Ollama inference requires sufficient hardware',
-      'Groq cloud dependency for drug formulary reasoning',
-    ],
     sortOrder: 2,
   },
   {
@@ -104,10 +91,6 @@ export const projects: ProjectMeta[] = [
       'AWS S3 synchronization for zero-cost persistence',
       'Multi-source synthesis across internal docs and web',
     ],
-    limitations: [
-      'Repository is proprietary and confidential — detailed implementation not disclosed',
-      'AWS S3 dependency for data persistence',
-    ],
     sortOrder: 3,
   },
   {
@@ -129,10 +112,6 @@ export const projects: ProjectMeta[] = [
       'Misinformation filtering for crisis data',
       'Role-based access: citizen, NGO, administrator',
       'Hyperlocal crisis updates',
-    ],
-    limitations: [
-      'Repository was inaccessible during initial review — implementation details unverified',
-      'Architecture described from resume; source code not inspected',
     ],
     sortOrder: 4,
   },
@@ -158,10 +137,6 @@ export const projects: ProjectMeta[] = [
       'Fixed retry backoff with dead-letter-topic recovery',
       'Kafka UI and Actuator observability',
     ],
-    limitations: [
-      'In-memory demonstration driver assignment, not geographically distributed',
-      'Not a complete ride-sharing business platform',
-    ],
     sortOrder: 5,
   },
   {
@@ -184,10 +159,6 @@ export const projects: ProjectMeta[] = [
       'Unary RPC, server streaming, client streaming and bidirectional streaming',
       'Deadlines, interceptors and metadata propagation',
       'Backward-compatible protobuf schema evolution',
-    ],
-    limitations: [
-      'Not all streaming paths, live collaboration and Kafka integrations are fully implemented',
-      'Multi-service architecture is a target design; some services are stubs',
     ],
     sortOrder: 6,
   },

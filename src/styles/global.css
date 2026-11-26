@@ -527,8 +527,23 @@
 .ms-arch-branch-label { display: flex; justify-content: center; margin: .8rem 0; color: var(--color-ai); font: .62rem 'JetBrains Mono', monospace; }.ms-arch-branch-label span { padding: .2rem .55rem; border: 1px solid color-mix(in srgb, var(--color-ai) 45%, var(--border)); border-radius: 999px; }
 .ms-arch-lower-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: .8rem; }.ms-store-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }.ms-node-store { min-height: 3.7rem; }
 .ms-arch-note { margin: 0; padding: .85rem 1rem; border-top: 1px solid var(--border); color: var(--text-muted); font: .68rem/1.55 'JetBrains Mono', monospace; }.ms-arch-note span { color: var(--accent); margin-right: .25rem; }
+.ts-architecture .ms-arch-body { background: linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 93%, var(--color-async)), var(--bg-base)); }
+.ts-architecture .ms-arch-legend { justify-content: flex-end; }
+.ms-legend-storage { color: var(--color-storage); }.ms-legend-error { color: var(--color-error); }
+.ts-architecture .ms-node-async .ms-tech-logo { color: var(--color-async); }.ts-architecture .ms-node-sync .ms-tech-logo { color: var(--color-sync); }
+.ts-architecture .ms-node-store .ms-tech-logo { color: var(--color-storage); }.ts-architecture .ms-node-ai .ms-tech-logo { color: var(--color-ai); }
+.ts-architecture .ms-node-error { border-color: color-mix(in srgb, var(--color-error) 55%, var(--border)); }.ts-architecture .ms-node-error .ms-tech-logo, .ts-error-arrow { color: var(--color-error); }
+.ts-architecture .ms-node-security { border-color: color-mix(in srgb, var(--color-warning) 60%, var(--border)); }
+.ts-architecture .ts-event-column { border-color: color-mix(in srgb, var(--color-async) 42%, var(--border)); }
+.ts-architecture .ts-event-flow { align-items: stretch; }.ts-architecture .ts-event-flow .ms-arch-flow-item { min-width: 9.4rem; }.ts-architecture .ts-event-flow .ms-arch-node { min-height: 4.8rem; }
+.ts-architecture .ts-branch-label { color: var(--color-sync); }.ts-architecture .ts-branch-label span { border-color: color-mix(in srgb, var(--color-sync) 45%, var(--border)); }
+.ts-architecture .ts-lower-grid { grid-template-columns: .8fr 1.2fr; }.ts-architecture .ts-output-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ts-architecture .ms-arch-node { min-height: 3.8rem; }.ts-architecture .ms-arch-node > span:last-child { min-width: 0; flex: 1 1 auto; text-align: left; }.ts-architecture .ms-arch-node strong { min-height: 1.9em; display: flex; align-items: center; overflow-wrap: anywhere; }.ts-architecture .ms-arch-node small { min-height: 2.7em; overflow-wrap: anywhere; }
+.ts-architecture .ts-entry-row .ms-arch-node { flex: 1 1 0; }
+.ts-architecture .ts-event-flow .ms-arch-node { align-items: flex-start; }
+.ts-architecture .ms-arch-node:hover { border-color: var(--color-sync); box-shadow: 0 0 0 1px var(--color-sync), 0 7px 20px var(--glow-blue); }
 .ms-architecture-compact .ms-arch-body { padding: .7rem; }.ms-architecture-compact .ms-arch-head { padding: .8rem .9rem; }.ms-architecture-compact .ms-arch-note { display: none; }.ms-architecture-compact .ms-arch-node small { font-size: .56rem; }.ms-architecture-compact .ms-arch-node strong { font-size: .68rem; }
-@media (max-width: 900px) { .ms-arch-columns { grid-template-columns: 1fr; }.ms-arch-flow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.ms-arch-flow-item { min-width: 0; }.ms-flow-arrow { display: none; } }
+@media (max-width: 900px) { .ms-arch-columns { grid-template-columns: 1fr; }.ms-arch-flow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.ms-arch-flow-item { min-width: 0; }.ms-flow-arrow { display: none; }.ts-architecture .ts-lower-grid { grid-template-columns: 1fr; } }
 @media (max-width: 620px) { .ms-arch-head, .ms-explorer-header { flex-direction: column; }.ms-arch-row { flex-direction: column; gap: .5rem; }.ms-entry-row::after { content: '↓'; bottom: -.9rem; }.ms-arch-row .ms-arch-node { width: 100%; }.ms-arch-legend { gap: .45rem; }.ms-arch-flow, .ms-lower-grid, .ms-store-grid { grid-template-columns: 1fr; }.ms-store-grid { display: grid; }.ms-arch-body { padding: .7rem; } }
 
 /* MediSureAI execution explorer */
@@ -616,17 +631,21 @@
   z-index: 1;
 }
 
-/* Shared full-page infrastructure environment */
-#page-bg { opacity: .98; }
-.page-bg-grid { opacity: .92; }
-.page-bg-topo { opacity: .62 !important; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 18%, transparent)); }
-#page-bg .page-bg-topo line { stroke-width: 1.8px; }
-#page-bg .page-bg-topo circle { filter: drop-shadow(0 0 5px currentColor); }
+/* Shared full-page infrastructure environment. Decorative topology stays in
+   its own, non-interactive stacking layer beneath all page content. */
+#page-bg { isolation: isolate; opacity: .98; }
+.page-bg-grid { opacity: .96; }
+.page-bg-topo { opacity: .82 !important; filter: drop-shadow(0 0 9px color-mix(in srgb, var(--accent) 24%, transparent)); transform: scale(1.14); transform-origin: center top; }
+#page-bg .page-bg-topo line { stroke-width: 2.5px; }
+#page-bg .page-bg-topo > circle { filter: drop-shadow(0 0 8px currentColor); transform: scale(1.45); transform-box: fill-box; transform-origin: center; }
+#page-bg .page-bg-topo rect { stroke-width: 1.5px; }
 #page-bg .page-bg-macro { animation: circuit-breathe 6s ease-in-out infinite; transform-origin: center; }
-#page-bg .page-bg-macro circle { filter: drop-shadow(0 0 9px currentColor); }
-.page-bg-pointer-glow { position: absolute; inset: 0; background: radial-gradient(420px circle at var(--pointer-x, 50%) var(--pointer-y, 25%), var(--glow-blue), transparent 72%); opacity: .75; transition: opacity .3s ease; }
+#page-bg .page-bg-macro path { filter: drop-shadow(0 0 7px currentColor); }
+#page-bg .page-bg-macro circle { filter: drop-shadow(0 0 11px currentColor); }
+.page-bg-pointer-glow { position: absolute; inset: 0; background: radial-gradient(520px circle at var(--pointer-x, 50%) var(--pointer-y, 25%), var(--glow-blue), transparent 72%); opacity: .8; transition: opacity .3s ease; }
 :root.light #page-bg { opacity: .75; }
-:root.light .page-bg-topo { opacity: .24 !important; filter: none; }
+:root.light .page-bg-topo { opacity: .32 !important; filter: none; }
+:root.light #page-bg .page-bg-topo > circle { filter: none; }
 @media (prefers-reduced-motion: reduce) { .page-bg-pointer-glow { opacity: .35; } }
 
 @keyframes circuit-breathe {
@@ -636,4 +655,26 @@
 
 @media (prefers-reduced-motion: reduce) {
   #page-bg .page-bg-macro { animation: none; }
+}
+
+/* Keep decorative topology visually and interactively separate from real
+   architecture diagrams and simulations. */
+.ms-architecture,
+.ms-explorer,
+.ms-simulation,
+.prose-case pre,
+.prose-case table {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+}
+.ms-architecture,
+.ms-explorer,
+.ms-simulation {
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--bg-base) 35%, transparent), 0 14px 40px color-mix(in srgb, var(--bg-base) 40%, transparent);
+}
+.prose-case pre,
+.prose-case table {
+  background-color: var(--bg-surface);
 }

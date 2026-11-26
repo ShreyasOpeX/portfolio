@@ -13,7 +13,7 @@ export const experience: ExperienceItem[] = [
   {
     company: 'Hampi Labs',
     role: 'Software Engineer Intern',
-    duration: 'February 2026 – Present',
+    duration: 'February 2026 – June 2026',
     project: 'Multi-tenant Hotel Management System',
     summary:
       'Building the backend for a multi-tenant hotel management system serving multiple hotel properties from a single deployment. The work covers authorization architecture, booking integrity, schema evolution and cloud infrastructure.',

@@ -27,8 +27,8 @@
   >
     <defs>
       <!-- Dot grid tile -->
-      <pattern id="pbg-dots" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
-        <circle cx="24" cy="24" r="1" fill="var(--border,#26313D)" opacity="0.55"/>
+      <pattern id="pbg-dots" x="0" y="0" width="72" height="72" patternUnits="userSpaceOnUse">
+        <circle cx="36" cy="36" r="1.5" fill="var(--border,#26313D)" opacity="0.62"/>
       </pattern>
 
       <!-- Repeating vertical fade mask: opaque top → transparent bottom -->
@@ -53,7 +53,7 @@
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 1200 2200"
     class="page-bg-topo"
-    style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.28;"
+    style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.82;"
     preserveAspectRatio="xMidYTop slice"
   >
     <defs>
@@ -256,9 +256,9 @@
 </div>
 
 <style>
-  /* Reduced motion: no animated packets, keep static grid */
+  /* Reduced motion: keep the static network visible without moving packets. */
   @media (prefers-reduced-motion: reduce) {
-    #page-bg circle,
+    #page-bg .page-bg-topo > circle,
     #page-bg .page-bg-macro {
       display: none !important;
     }
