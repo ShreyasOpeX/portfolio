@@ -1,0 +1,126 @@
+---
+import { profile } from '../../data/profile';
+---
+
+<section id="hero" class="relative" style="min-height: 92vh; display: flex; align-items: center;">
+  <!-- Background is handled by PageBackground (fixed, full-page) -->
+  <!-- Vignette: fade page-bg at sides so text reads cleanly -->
+  <div class="absolute inset-0 pointer-events-none" aria-hidden="true" style="background: radial-gradient(ellipse 70% 80% at 50% 40%, transparent 30%, var(--bg-base) 90%);"></div>
+
+  <div class="container-content relative w-full py-24 sm:py-32" style="z-index: 1;">
+    <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+      <!-- ── LEFT: Content ── -->
+      <div>
+        <!-- Label -->
+        <div class="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full text-xs font-mono" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted);">
+          <span class="w-1.5 h-1.5 rounded-full" style="background: var(--accent); animation: pulse-node 2s ease-in-out infinite;"></span>
+          BACKEND SOFTWARE ENGINEER / BENGALURU, INDIA
+        </div>
+
+        <!-- Heading -->
+        <h1 class="font-semibold tracking-tight mb-4" style="font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1.1; color: var(--text-primary);">
+          Shreyas.
+        </h1>
+        <h2 class="font-medium mb-6" style="font-size: clamp(1.25rem, 3vw, 1.75rem); line-height: 1.3; color: var(--text-secondary);">
+          Engineering what runs behind the scenes.
+        </h2>
+        <p class="mb-8 leading-relaxed" style="font-size: 1.0625rem; color: var(--text-secondary); max-width: 480px;">
+          I build backend systems around reliable service communication, event-driven architectures and applied AI, primarily using Java and Spring Boot.
+        </p>
+
+        <!-- CTA buttons -->
+        <div class="flex flex-wrap gap-3 mb-8">
+          <a href="/projects/"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+            style="background: var(--accent); color: #090C10; font-weight: 600;">
+            Explore my work
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="https://drive.google.com/file/d/17iJLltBpf2X4lJzdbnTH6qmDCAtpXd7u/view?usp=drive_link" target="_blank" rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+            style="background: transparent; border: 1px solid var(--border); color: var(--text-secondary);"
+            aria-label="View résumé (PDF, opens in new tab)">
+            View résumé
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+
+        <!-- Social links -->
+        <div class="flex items-center gap-5 mb-10">
+          <a href={profile.github} target="_blank" rel="noopener noreferrer"
+            class="flex items-center gap-1.5 text-sm font-mono accent-hover"
+            style="color: var(--text-muted);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+            GitHub
+          </a>
+          <a href={profile.linkedin} target="_blank" rel="noopener noreferrer"
+            class="flex items-center gap-1.5 text-sm font-mono accent-hover"
+            style="color: var(--text-muted);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+            LinkedIn
+          </a>
+          <a href={profile.leetcode} target="_blank" rel="noopener noreferrer"
+            class="flex items-center gap-1.5 text-sm font-mono accent-hover"
+            style="color: var(--text-muted);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H20.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z"/></svg>
+            LeetCode
+          </a>
+        </div>
+
+        <!-- Tech focus tags -->
+        <div class="flex flex-wrap gap-2" aria-label="Technical focus areas">
+          {profile.heroTechnicalTags.map(tag => (
+            <span class="font-mono text-xs px-2.5 py-1 rounded" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary);">{tag}</span>
+          ))}
+        </div>
+      </div>
+
+      <!-- ── RIGHT: Stats + Info panel ── -->
+      <div class="flex flex-col gap-4 lg:pl-4">
+        <!-- Stats grid -->
+        <div class="grid grid-cols-3 gap-3">
+          {profile.stats.map(stat => (
+            <div class="p-4 rounded-lg text-center" style="background: var(--bg-elevated); border: 1px solid var(--border);">
+              <div class="font-mono text-xl font-bold mb-1" style="color: var(--accent);">{stat.value}</div>
+              <div class="text-xs" style="color: var(--text-muted); line-height: 1.3;">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <!-- Current role card -->
+        <div class="p-4 rounded-lg" style="background: var(--bg-elevated); border: 1px solid var(--border);">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: var(--accent);"></span>
+            <span class="font-mono text-xs" style="color: var(--accent);">CURRENT</span>
+          </div>
+          <p class="font-semibold text-sm mb-0.5" style="color: var(--text-primary);">Software Engineer Intern</p>
+          <p class="text-sm" style="color: var(--text-secondary);">Hampi Labs · Feb 2026 – Present</p>
+          <p class="text-xs mt-1.5" style="color: var(--text-muted);">Multi-tenant hotel management backend · Spring Boot 4.0</p>
+        </div>
+
+        <!-- Engineering interests -->
+        <div class="p-4 rounded-lg" style="background: var(--bg-surface); border: 1px solid var(--border);">
+          <p class="font-mono text-xs mb-3" style="color: var(--text-muted);">// engineering interests</p>
+          <div class="space-y-2">
+            {[
+              { label: 'Distributed Systems', desc: 'Kafka, event-driven pipelines, outbox patterns' },
+              { label: 'Service Communication', desc: 'gRPC, REST, async messaging, protocol buffers' },
+              { label: 'Applied AI Engineering', desc: 'RAG, SRLM, vector retrieval, agent workflows' },
+              { label: 'Backend Reliability', desc: 'Idempotency, retries, consistency, observability' },
+            ].map(item => (
+              <div class="flex items-start gap-2">
+                <span class="mt-1.5 w-1 h-1 rounded-full flex-shrink-0" style="background: var(--accent);"></span>
+                <div>
+                  <span class="text-sm font-medium" style="color: var(--text-primary);">{item.label}</span>
+                  <span class="text-xs ml-2" style="color: var(--text-muted);">{item.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

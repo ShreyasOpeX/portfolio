@@ -1,0 +1,26 @@
+---
+import { profile } from '../../data/profile';
+---
+
+<footer
+  class="border-t mt-20"
+  style="border-color: var(--border); position: relative;"
+>
+  <div class="container-content py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <p class="text-sm" style="color: var(--text-muted);">
+      Shreyas — Software Engineer
+    </p>
+    <div class="flex items-center gap-4 text-sm" style="color: var(--text-muted);">
+      <span>Built with Astro and TypeScript</span>
+      <span aria-hidden="true">·</span>
+      <a
+        href={profile.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="accent-hover"
+      >
+        GitHub
+      </a>
+    </div>
+  </div>
+</footer>

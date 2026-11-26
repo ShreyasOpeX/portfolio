@@ -1,0 +1,70 @@
+---
+const principles = [
+  {
+    id: '01',
+    title: 'Reliability over assumptions',
+    body: 'Design for retries, duplicate messages, dependency failures and recoverable workflows. The transactional outbox in TradeSentry and idempotent consumer inboxes exist because network failures and process crashes are assumed, not exceptional.',
+    project: 'TradeSentry',
+    projectSlug: 'tradesentry',
+  },
+  {
+    id: '02',
+    title: 'Consistency where it matters',
+    body: "Use transactional boundaries and database constraints to enforce critical invariants. At Hampi Labs, a UNIQUE(room_id, date) constraint prevents double bookings independently of application-level logic.",
+    project: 'Hampi Labs',
+    projectSlug: null,
+  },
+  {
+    id: '03',
+    title: 'Explicit service boundaries',
+    body: 'Choose synchronous or asynchronous communication according to the responsibility and failure model. TradeSentry uses Kafka between pipeline stages and gRPC specifically for in-investigation synchronous reads — avoiding both extremes.',
+    project: 'TradeSentry + SentinelHub',
+    projectSlug: 'tradesentry',
+  },
+  {
+    id: '04',
+    title: 'Understand the internals',
+    body: "Explore how brokers, databases, protocols and runtimes behave. RouteX and SentinelHub are learning repositories — built to understand Kafka's partition model and gRPC's call shapes from first principles.",
+    project: 'RouteX + SentinelHub',
+    projectSlug: 'routex',
+  },
+  {
+    id: '05',
+    title: 'Simplicity before complexity',
+    body: 'Introduce infrastructure only when the problem justifies it. MediSureAI uses RabbitMQ for document ingestion because blocking the HTTP thread on embedding generation creates a real problem — not for architectural aesthetics.',
+    project: 'MediSureAI',
+    projectSlug: 'medsureai',
+  },
+];
+---
+
+<section id="principles" class="container-content py-20">
+  <hr class="divider mb-16" />
+
+  <div class="mb-10">
+    <p class="section-label mb-3">Approach</p>
+    <h2 class="text-2xl sm:text-3xl font-semibold mb-3">How I approach engineering</h2>
+    <p class="max-w-xl" style="color: var(--text-secondary);">
+      Principles grounded in actual project decisions, not aspirational statements.
+    </p>
+  </div>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {principles.map(p => (
+      <div class="principle-card">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <span class="font-mono text-xs" style="color: var(--accent);">{p.id}</span>
+          {p.projectSlug ? (
+            <a href={`/projects/${p.projectSlug}/`} class="font-mono text-xs accent-hover" style="color: var(--text-muted);">
+              /{p.project.split(' ')[0].toLowerCase()}
+            </a>
+          ) : (
+            <span class="font-mono text-xs" style="color: var(--text-muted);">{p.project}</span>
+          )}
+        </div>
+        <h3 class="text-sm font-semibold mb-2" style="color: var(--text-primary);">{p.title}</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">{p.body}</p>
+      </div>
+    ))}
+  </div>
+</section>

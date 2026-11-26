@@ -1,0 +1,78 @@
+---
+import { getLogoForSkill, techLogos, type TechLogo } from '../../data/techLogos';
+
+interface Props { compact?: boolean; }
+const { compact = false } = Astro.props;
+
+const entryNodes = [
+  { name: 'React frontend', sub: 'role-based UI · Vite', logo: 'React', kind: 'sync' },
+  { name: 'Spring Boot REST API', sub: 'Axios · /api/*', logo: 'Spring Boot', kind: 'sync' },
+  { name: 'Spring Security', sub: 'JWT · RBAC · @PreAuthorize', logo: 'Spring Security', kind: 'security' },
+];
+const domainNodes = [
+  { name: 'Doctor services', sub: 'profiles · records · billing', logo: 'Spring Boot' },
+  { name: 'Patient services', sub: 'timeline · chat · formulary', logo: 'Spring Boot' },
+  { name: 'Admin controls', sub: 'index stats · maintenance', logo: 'JWT' },
+];
+const ingestNodes = [
+  { name: 'PDF / DOCX upload', sub: 'multipart · 202 Accepted', logo: 'REST APIs' },
+  { name: 'Apache Tika', sub: 'text + metadata extraction', logo: 'Apache Tika' },
+  { name: 'Chunking', sub: 'retrieval-sized segments', logo: 'RAG pipelines' },
+  { name: 'RabbitMQ', sub: 'async processing queue', logo: 'RabbitMQ' },
+];
+const queryNodes = [
+  { name: 'Agentic query', sub: '/api/query · intent + plan', logo: 'LangGraph' },
+  { name: 'SRLM pipeline', sub: '/api/srlm · reflect + score', logo: 'SRLM' },
+  { name: 'Hybrid retrieval', sub: 'semantic + keyword', logo: 'Hybrid retrieval' },
+];
+const modelNodes = [
+  { name: 'Ollama local', sub: 'embeddings + foundation model', logo: 'Ollama', kind: 'ai' },
+  { name: 'Groq cloud', sub: 'critique + formulary reasoning', logo: 'Groq', kind: 'ai' },
+];
+const stores = [
+  { name: 'MongoDB', sub: 'document text + chunks', logo: 'MongoDB' },
+  { name: 'PostgreSQL', sub: 'users · records · billing · tokens', logo: 'PostgreSQL' },
+  { name: 'pgvector + HNSW', sub: 'embeddings · cosine search', logo: 'pgvector' },
+];
+
+const logoFor = (name: string): TechLogo => getLogoForSkill(name) ?? techLogos.pattern;
+---
+
+<section class:list={["ms-architecture", compact && "ms-architecture-compact"]} aria-label="MediSureAI system architecture">
+  <div class="ms-arch-head">
+    <div><p class="section-label mb-2">System architecture</p><h3 class="text-base sm:text-lg font-semibold">MediSureAI service topology</h3></div>
+    <div class="ms-arch-legend"><span class="ms-legend-sync">→ sync / REST</span><span class="ms-legend-async">⇢ async / queue</span><span class="ms-legend-ai">↝ LLM interaction</span></div>
+  </div>
+
+  <div class="ms-arch-body">
+    <div class="ms-arch-row ms-entry-row">
+      {entryNodes.map(node => { const logo = logoFor(node.logo); return <div class:list={["ms-arch-node", `ms-node-${node.kind || 'service'}`]}>
+        <span class="ms-tech-logo"><svg viewBox={logo.viewBox ?? '0 0 24 24'} aria-hidden="true" set:html={logo.svgPath} /></span>
+        <span><strong>{node.name}</strong><small>{node.sub}</small></span>
+      </div>; })}
+    </div>
+    <div class="ms-arch-rail ms-rail-sync"><span>authenticated HTTP boundary</span></div>
+
+    <div class="ms-arch-columns">
+      <div class="ms-arch-column">
+        <p class="ms-arch-label"><span>01</span> domain APIs</p>
+        <div class="ms-arch-stack">{domainNodes.map(node => { const logo = logoFor(node.logo); return <div class="ms-arch-node ms-node-domain"><span class="ms-tech-logo"><svg viewBox={logo.viewBox ?? '0 0 24 24'} aria-hidden="true" set:html={logo.svgPath} /></span><span><strong>{node.name}</strong><small>{node.sub}</small></span></div>; })}</div>
+      </div>
+      <div class="ms-arch-column ms-pipeline-column">
+        <p class="ms-arch-label"><span>02</span> document ingestion <em>async</em></p>
+        <div class="ms-arch-flow">{ingestNodes.map((node, index) => { const logo = logoFor(node.logo); return <div class="ms-arch-flow-item"><div class="ms-arch-node ms-node-pipeline"><span class="ms-tech-logo"><svg viewBox={logo.viewBox ?? '0 0 24 24'} aria-hidden="true" set:html={logo.svgPath} /></span><span><strong>{node.name}</strong><small>{node.sub}</small></span></div>{index < ingestNodes.length - 1 && <span class="ms-flow-arrow ms-async-arrow">⇢</span>}</div>; })}</div>
+      </div>
+      <div class="ms-arch-column">
+        <p class="ms-arch-label"><span>03</span> query orchestration <em>sync</em></p>
+        <div class="ms-arch-stack">{queryNodes.map(node => { const logo = logoFor(node.logo); return <div class="ms-arch-node ms-node-query"><span class="ms-tech-logo"><svg viewBox={logo.viewBox ?? '0 0 24 24'} aria-hidden="true" set:html={logo.svgPath} /></span><span><strong>{node.name}</strong><small>{node.sub}</small></span></div>; })}</div>
+      </div>
+    </div>
+
+    <div class="ms-arch-branch-label"><span>evidence + inference boundary</span></div>
+    <div class="ms-arch-lower-grid">
+      <div class="ms-arch-panel ms-model-panel"><p class="ms-arch-label"><span>04</span> model providers</p><div class="ms-arch-stack">{modelNodes.map(node => { const logo = logoFor(node.logo); return <div class="ms-arch-node ms-node-ai"><span class="ms-tech-logo"><svg viewBox={logo.viewBox ?? '0 0 24 24'} aria-hidden="true" set:html={logo.svgPath} /></span><span><strong>{node.name}</strong><small>{node.sub}</small></span></div>; })}</div></div>
+      <div class="ms-arch-panel ms-store-panel"><p class="ms-arch-label"><span>05</span> persistence + retrieval</p><div class="ms-store-grid">{stores.map(node => { const logo = logoFor(node.logo); return <div class="ms-arch-node ms-node-store"><span class="ms-tech-logo"><svg viewBox={logo.viewBox ?? '0 0 24 24'} aria-hidden="true" set:html={logo.svgPath} /></span><span><strong>{node.name}</strong><small>{node.sub}</small></span></div>; })}</div></div>
+    </div>
+  </div>
+  {!compact && <p class="ms-arch-note"><span>→</span> REST calls are authenticated and role-gated. <span>⇢</span> RabbitMQ decouples upload acknowledgement from extraction, persistence and embedding. <span>↝</span> Ollama stays local for private foundation tasks; Groq handles selected critique and formulary workloads.</p>}
+</section>

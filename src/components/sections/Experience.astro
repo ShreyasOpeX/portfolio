@@ -1,0 +1,72 @@
+---
+import { experience } from '../../data/experience';
+---
+
+<section id="experience" class="container-content py-20">
+  <hr class="divider mb-16" />
+
+  <div class="mb-10">
+    <p class="section-label mb-3">Experience</p>
+    <h2 class="text-2xl sm:text-3xl font-semibold">Professional work</h2>
+  </div>
+
+  {experience.map(item => (
+    <div class="max-w-3xl">
+      <!-- Role header -->
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-6">
+        <div>
+          <h3 class="text-xl font-semibold">{item.role}</h3>
+          <p class="mt-1 font-mono text-sm" style="color: var(--accent);">{item.company}</p>
+          <p class="mt-1 text-sm" style="color: var(--text-muted);">{item.project}</p>
+        </div>
+        <div class="shrink-0">
+          <span class="font-mono text-xs px-2.5 py-1 rounded" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted);">
+            {item.duration}
+          </span>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <p class="mb-8 leading-relaxed" style="color: var(--text-secondary);">{item.summary}</p>
+
+      <!-- Highlights -->
+      <div class="space-y-5 mb-8">
+        {item.highlights.map((h, i) => (
+          <div class="flex gap-4">
+            <div class="shrink-0 mt-1">
+              <div
+                class="w-6 h-6 rounded flex items-center justify-center font-mono text-xs font-medium"
+                style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--accent);"
+              >
+                {i + 1}
+              </div>
+            </div>
+            <div>
+              <p class="font-medium mb-1" style="color: var(--text-primary);">{h.title}</p>
+              <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">{h.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Metrics -->
+      {item.metrics.length > 0 && (
+        <div class="flex flex-wrap gap-6 mb-8 p-4 rounded" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+          {item.metrics.map(m => (
+            <div>
+              <div class="font-mono text-xl font-medium" style="color: var(--text-primary);">{m.value}</div>
+              <div class="text-xs mt-0.5" style="color: var(--text-muted);">{m.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <!-- Technologies -->
+      <div class="flex flex-wrap gap-2">
+        {item.technologies.map(tech => (
+          <span class="tech-tag">{tech}</span>
+        ))}
+      </div>
+    </div>
+  ))}
+</section>

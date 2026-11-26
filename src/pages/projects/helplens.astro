@@ -1,0 +1,41 @@
+---
+import CaseStudyLayout from '../../layouts/CaseStudyLayout.astro';
+import { getProjectBySlug } from '../../data/projects';
+
+const project = getProjectBySlug('helplens')!;
+---
+
+<CaseStudyLayout project={project}>
+
+  <h2>Overview</h2>
+  <p>
+    HelpLens is an AI-powered crisis response platform built with Spring Boot and Spring AI. It allows citizens, NGOs and emergency administrators to query crisis information — shelter locations, hospital availability and blocked routes — using natural language, with misinformation filtering to improve response reliability.
+  </p>
+  <p>
+    <strong>Note:</strong> The HelpCrisis repository was not accessible during the initial review of this portfolio. The information on this page is sourced from resume-verified descriptions. Internal implementation details have not been inspected and are not presented here.
+  </p>
+
+  <h2>Verified capabilities</h2>
+  <ul>
+    <li>Spring Boot backend with Spring AI assistant for natural-language crisis queries</li>
+    <li>Crisis information covering shelters, hospitals and blocked routes</li>
+    <li>Misinformation filtering for crisis-related data</li>
+    <li>Spring Security with JWT authentication</li>
+    <li>Role-based access control for citizens, NGOs and administrators</li>
+    <li>Hyperlocal crisis updates</li>
+  </ul>
+
+  <h2>Engineering context</h2>
+  <p>
+    Crisis response platforms have a distinctive constraint: they must remain available and return accurate information precisely when infrastructure is under stress. Natural-language query interfaces can lower the barrier to accessing critical resources for non-technical users. Misinformation filtering is essential in high-stakes contexts where false shelter or route data can cause direct harm.
+  </p>
+  <p>
+    The role distinction between citizens (read access to crisis data), NGOs (update and coordination access) and administrators (full control) reflects real coordination requirements in emergency management.
+  </p>
+
+  <h2>Source availability</h2>
+  <p>
+    The repository is linked at the top of this page. If the repository has become publicly accessible since this portfolio was built, source code and architecture details may be viewable there.
+  </p>
+
+</CaseStudyLayout>

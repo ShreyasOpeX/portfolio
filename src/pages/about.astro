@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { profile } from '../data/profile';
+import { education, leadership } from '../data/achievements';
+---
+
+<BaseLayout
+  title="About — Shreyas"
+  description="About Shreyas: computer science undergraduate and backend-focused software engineer based in Bengaluru, working on distributed systems, event-driven architecture and applied AI."
+>
+  <div class="container-article py-16 sm:py-24">
+
+    <div class="mb-10">
+      <p class="section-label mb-4">About</p>
+      <h1 class="text-3xl sm:text-4xl font-semibold mb-6">Shreyas</h1>
+      <p class="text-lg" style="color: var(--text-secondary);">Backend software engineer · Bengaluru, India</p>
+    </div>
+
+    <hr class="divider mb-10" />
+
+    <!-- Bio -->
+    <div class="space-y-5 mb-14" style="color: var(--text-secondary);">
+      <p>
+        I'm a computer science undergraduate and backend-focused software engineer based in Bengaluru. I'm particularly interested in the systems that power applications behind the scenes — how services communicate, how data moves through distributed infrastructure and how software remains reliable when individual components fail.
+      </p>
+      <p>
+        My work primarily revolves around Java, Spring Boot, event-driven systems and applied AI engineering. I enjoy understanding the underlying mechanisms of technologies rather than treating them as black boxes. That means reading source code, working through failure modes and thinking carefully about consistency and reliability trade-offs.
+      </p>
+      <p>
+        Through internships, personal projects and technical exploration, I've worked on multi-tenant backend systems, Kafka-based pipelines, gRPC service communication and self-reflective retrieval architectures. TradeSentry and MediSureAI are my most detailed explorations — both are reference implementations that go beyond basic CRUD to demonstrate meaningful distributed systems patterns.
+      </p>
+      <p>
+        Outside project development, I regularly practice competitive programming. I hold the LeetCode Knight badge with a contest rating of 1872 and 650+ problems solved across platforms. I also contribute to the technical community through CodeRIT, Ramaiah Institute of Technology's official coding club, where I help organize events, contests and national-level hackathons.
+      </p>
+      <p>
+        I'm currently a second-year student at Ramaiah Institute of Technology, completing a B.E. in Computer Science & Engineering with a specialization in Artificial Intelligence and Machine Learning.
+      </p>
+    </div>
+
+    <!-- Current interests -->
+    <section class="mb-14">
+      <h2 class="text-lg font-semibold mb-5">What I'm currently working on</h2>
+      <div class="space-y-3">
+        {[
+          'Building production-grade backend features at Hampi Labs using Spring Boot 4.0',
+          'Exploring Kafka consumer reliability patterns and gRPC service contracts through TradeSentry and SentinelHub',
+          'Learning Kubernetes and Helm for container orchestration',
+          'Deepening understanding of database internals — indexing strategies, query planning and consistency models',
+        ].map(item => (
+          <div class="flex items-start gap-3 text-sm" style="color: var(--text-secondary);">
+            <span class="mt-1.5 w-1 h-1 rounded-full shrink-0" style="background: var(--accent);"></span>
+            {item}
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Education card -->
+    {education.map(edu => (
+      <section class="mb-14">
+        <h2 class="text-lg font-semibold mb-5">Education</h2>
+        <div class="p-5 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <div>
+              <p class="font-semibold">{edu.institution}</p>
+              <p class="text-sm mt-0.5" style="color: var(--text-secondary);">{edu.degree}</p>
+            </div>
+            <span class="font-mono text-xs shrink-0" style="color: var(--text-muted);">{edu.duration}</span>
+          </div>
+          <div class="flex items-center gap-2 mb-4">
+            <span class="font-mono text-sm font-medium" style="color: var(--accent);">{edu.cgpa}</span>
+            <span class="text-sm" style="color: var(--text-muted);">CGPA</span>
+          </div>
+          <p class="text-xs font-mono mb-2" style="color: var(--text-muted);">// relevant coursework</p>
+          <div class="flex flex-wrap gap-1.5">
+            {edu.coursework.map(c => <span class="tech-tag">{c}</span>)}
+          </div>
+        </div>
+      </section>
+    ))}
+
+    <!-- Leadership -->
+    {leadership.map(l => (
+      <section class="mb-14">
+        <h2 class="text-lg font-semibold mb-5">Community involvement</h2>
+        <div class="p-5 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+          <p class="font-semibold mb-0.5">{l.role}</p>
+          <p class="text-sm mb-1" style="color: var(--accent);">{l.organization}</p>
+          <p class="text-xs font-mono mb-3" style="color: var(--text-muted);">Since {l.since}</p>
+          <ul class="space-y-1.5">
+            {l.responsibilities.map(r => (
+              <li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+                <span class="mt-1.5 w-1 h-1 rounded-full shrink-0" style="background: var(--border);"></span>
+                {r}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    ))}
+
+    <!-- Contact links -->
+    <section>
+      <h2 class="text-lg font-semibold mb-5">Get in touch</h2>
+      <div class="flex flex-wrap gap-4">
+        <a href={`mailto:${profile.email}`} class="text-sm font-mono accent-hover" style="color: var(--text-secondary);">{profile.email}</a>
+        <a href={profile.github} target="_blank" rel="noopener noreferrer" class="text-sm font-mono accent-hover" style="color: var(--text-secondary);">GitHub ↗</a>
+        <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" class="text-sm font-mono accent-hover" style="color: var(--text-secondary);">LinkedIn ↗</a>
+        <a href={profile.leetcode} target="_blank" rel="noopener noreferrer" class="text-sm font-mono accent-hover" style="color: var(--text-secondary);">LeetCode ↗</a>
+      </div>
+    </section>
+
+  </div>
+</BaseLayout>

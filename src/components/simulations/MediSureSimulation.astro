@@ -1,0 +1,112 @@
+---
+import { getLogoForSkill, techLogos, type TechLogo } from '../../data/techLogos';
+
+const scenarioTech = ['Apache Tika', 'RabbitMQ', 'Ollama', 'pgvector', 'LangGraph', 'Groq'];
+const logoFor = (name: string): TechLogo => getLogoForSkill(name) ?? techLogos.pattern;
+const step = (id: string, label: string, tech: string, desc: string, output: object) => ({ id, label, tech, desc, payload: JSON.stringify(output, null, 2) });
+
+const scenarios = {
+  ingestion: {
+    label: 'Document ingestion',
+    endpoint: 'POST /api/documents/upload',
+    steps: [
+      step('01', 'Upload received', 'REST API', 'A multipart PDF/DOCX upload is accepted at the authenticated API boundary.', { event: 'DocumentUploadReceived', documentId: 'doc-0194', filename: 'policy-demo.pdf', contentType: 'application/pdf', status: 'ACCEPTED' }),
+      step('02', 'Validate document', 'Spring Boot', 'The service validates file type, size and request ownership before processing.', { documentId: 'doc-0194', valid: true, pages: 8, ownerRole: 'PATIENT', next: 'EXTRACT_TEXT' }),
+      step('03', 'Extract text', 'Apache Tika', 'Apache Tika extracts text and metadata without blocking later embedding work.', { extractor: 'Apache Tika', pages: 8, characters: 18432, language: 'en', metadata: { title: 'Policy demo', author: 'synthetic' } }),
+      step('04', 'Prepare chunks', 'Chunker', 'Text is split into traceable retrieval chunks with document and page metadata.', { documentId: 'doc-0194', chunkCount: 42, chunkSize: 512, overlap: 64, sample: { chunkId: 'doc-0194-c07', page: 3, text: '...covered inpatient services and annual limits...' } }),
+      step('05', 'Publish async job', 'RabbitMQ', 'The upload path publishes a processing message and can return before embedding completes.', { exchange: 'medsure.documents', routingKey: 'document.process', messageId: 'msg-77a1', documentId: 'doc-0194', delivery: 'ASYNC' }),
+      step('06', 'Persist document data', 'MongoDB', 'Document text and chunks are persisted in MongoDB for traceability and reprocessing.', { collection: 'documents', documentId: 'doc-0194', chunks: 42, status: 'TEXT_PERSISTED' }),
+      step('07', 'Generate embeddings', 'Ollama', 'A local Ollama embedding model creates vectors; only illustrative dimensions are shown here.', { provider: 'ollama', model: 'nomic-embed-text', chunkId: 'doc-0194-c07', embedding: [0.018, -0.241, 0.093, '...'], dimensions: 768, privacy: 'LOCAL' }),
+      step('08', 'Persist vectors', 'PostgreSQL / pgvector', 'Embeddings are written to PostgreSQL with pgvector alongside retrieval metadata.', { table: 'vector_store', documentId: 'doc-0194', vectorsWritten: 42, distance: 'COSINE', transaction: 'COMMITTED' }),
+      step('09', 'Index ready', 'HNSW', 'The HNSW index is ready for approximate nearest-neighbour retrieval.', { index: 'vector_store_embedding_hnsw', method: 'HNSW', readiness: 'RETRIEVABLE', documentId: 'doc-0194' }),
+    ],
+  },
+  query: {
+    label: 'Agentic query processing',
+    endpoint: 'POST /api/query',
+    steps: [
+      step('01', 'Query received', 'REST API', 'A synthetic insurance-policy question enters the authenticated query endpoint.', { queryId: 'qry-4b12', query: 'Does this policy cover a six-month physiotherapy programme?', userRole: 'PATIENT', status: 'RECEIVED' }),
+      step('02', 'Detect intent', 'Intent service', 'The orchestrator classifies the request and extracts the domain entities needed for planning.', { intent: 'POLICY_COVERAGE', entities: ['physiotherapy', 'six months'], confidence: 0.91 }),
+      step('03', 'Plan task', 'Agent orchestrator', 'A bounded plan selects retrieval tools before response generation.', { planId: 'plan-18', steps: ['retrieve_policy_clauses', 'retrieve_metadata', 'assemble_context', 'generate_answer'], maxToolCalls: 3 }),
+      step('04', 'Select tools', 'LangGraph', 'The agent chooses document retrieval and policy metadata lookup; no external action is taken.', { selectedTools: [{ name: 'vector_search', args: { query: 'physiotherapy coverage limits' } }, { name: 'policy_metadata', args: { documentId: 'doc-0194' } }] }),
+      step('05', 'Retrieve evidence', 'pgvector + metadata', 'Relevant chunks and structured policy metadata are fetched for the context window.', { vectorHits: [{ chunkId: 'doc-0194-c07', score: 0.87 }, { chunkId: 'doc-0194-c12', score: 0.81 }], metadata: { policyStatus: 'ACTIVE', renewal: '2027-04-01' } }),
+      step('06', 'Assemble context', 'RAG context', 'Evidence is normalized with source identifiers so claims can be cited later.', { sources: ['doc-0194#page-3', 'doc-0194#page-5'], contextChars: 4860, unsupportedClaims: 'BLOCKED' }),
+      step('07', 'Generate response', 'Ollama / Groq', 'The model receives the bounded context. This panel represents orchestration only, not hidden chain-of-thought.', { modelRoute: 'Ollama foundation -> Groq critique', answerDraft: 'Coverage appears subject to the policy limits and pre-authorisation clause.', citations: 2 }),
+      step('08', 'Return cited answer', 'Response contract', 'The API returns a structured, citation-backed answer with execution metadata.', { queryId: 'qry-4b12', answer: 'The policy appears to cover physiotherapy subject to the annual limit and pre-authorisation requirements.', citations: ['doc-0194#page-3', 'doc-0194#page-5'], confidence: 'CALIBRATED_HEURISTIC', traceId: 'trace-88d0' }),
+    ],
+  },
+  srlm: {
+    label: 'SRLM reasoning',
+    endpoint: 'POST /api/srlm',
+    steps: [
+      step('01', 'Receive question', 'SRLM API', 'The self-reflective endpoint receives a bounded question and starts a trace.', { traceId: 'srlm-10c8', query: 'Which policy clause limits physiotherapy reimbursement?', status: 'STARTED' }),
+      step('02', 'Hybrid retrieve', 'pgvector + keyword', 'Semantic search and exact-term retrieval jointly maximize evidence recall.', { semantic: [{ chunkId: 'doc-0194-c07', score: 0.89 }], keyword: [{ chunkId: 'doc-0194-c12', score: 0.84 }], merged: 4 }),
+      step('03', 'Rerank evidence', 'Cross-encoder', 'Candidate chunks are reranked as query-document pairs for precision.', { candidates: [{ chunkId: 'doc-0194-c07', score: 0.94 }, { chunkId: 'doc-0194-c12', score: 0.88 }], selected: 2 }),
+      step('04', 'Generate candidates', 'Ollama', 'Several concise candidate responses are generated from the same retrieved evidence; private chain-of-thought is not exposed.', { candidates: [{ id: 'path-a', summary: 'Annual limit is the main constraint.' }, { id: 'path-b', summary: 'Pre-authorisation and annual limit both apply.' }, { id: 'path-c', summary: 'Coverage depends on treatment classification.' }], count: 3 }),
+      step('05', 'Self-reflect', 'Groq critique', 'A critique pass checks factual alignment, contradictions and unsupported claims.', { evaluations: [{ path: 'path-a', grounded: true, contradiction: false }, { path: 'path-b', grounded: true, contradiction: false }, { path: 'path-c', grounded: false, contradiction: true }], rejected: ['path-c'] }),
+      step('06', 'Validate claims', 'Safety checks', 'Claims are compared with retrieved clauses; unsupported clinical recommendations remain out of scope.', { checks: { citationCoverage: 1, contradictionDetected: false, clinicalAdvice: false, evidenceAligned: true } }),
+      step('07', 'Score candidates', 'SRLM scorer', 'Candidates are scored on relevance, correctness and completeness before synthesis.', { scores: [{ path: 'path-a', relevance: 0.88, correctness: 0.91, completeness: 0.73 }, { path: 'path-b', relevance: 0.92, correctness: 0.94, completeness: 0.9 }] , winner: 'path-b' }),
+      step('08', 'Synthesize answer', 'Response synthesis', 'The selected evidence and validated candidate become one concise cited response.', { answer: 'The retrieved policy indicates that physiotherapy reimbursement is constrained by both pre-authorisation and an annual limit.', citations: ['doc-0194#page-3', 'doc-0194#page-5'], confidence: 0.87, confidenceType: 'heuristic' }),
+      step('09', 'Return response', 'API contract', 'The final response exposes citations and confidence metadata, not private reasoning traces.', { status: 'COMPLETE', citations: 2, confidence: 0.87, measuredAccuracy: null, note: 'illustrative simulation only' }),
+    ],
+  },
+};
+---
+
+<section class="ms-explorer" data-ms-simulation aria-label="MediSureAI Pipeline Execution Explorer">
+  <div class="ms-explorer-header">
+    <div><p class="section-label mb-2">Illustrative simulation</p><h2 class="text-lg sm:text-xl font-semibold">MediSureAI — Pipeline Execution Explorer</h2><p class="ms-explorer-subtitle">Synthetic traces explain orchestration behavior; this is not a live AI service or clinical recommendation engine.</p></div>
+    <span class="ms-synthetic-badge">synthetic data only</span>
+  </div>
+  <div class="ms-scenario-tabs" role="tablist" aria-label="MediSureAI scenarios">
+    {Object.entries(scenarios).map(([key, scenario], index) => <button type="button" role="tab" class:list={["ms-scenario-tab", index === 0 && "is-active"]} aria-selected={index === 0 ? 'true' : 'false'} data-scenario={key}><span>0{index + 1}</span>{scenario.label}</button>)}
+  </div>
+  <div class="ms-sim-tech-strip">{scenarioTech.map(tech => { const logo = logoFor(tech); return <span class="ms-sim-tech"><svg viewBox={logo.viewBox ?? '0 0 24 24'} aria-hidden="true" set:html={logo.svgPath} />{tech}</span>; })}</div>
+  <div class="ms-explorer-grid">
+    <div class="ms-trace-column"><div class="ms-sim-panel-label">// execution trace <span data-progress>0 / 9</span></div><div class="ms-progress"><span data-progress-bar></span></div><div class="ms-trace-list" data-trace aria-live="polite"></div><div class="ms-sim-controls"><button type="button" class="ms-control" data-prev>← prev</button><button type="button" class="ms-control ms-control-primary" data-next>next →</button><button type="button" class="ms-control" data-reset>reset</button><button type="button" class="ms-control ms-control-auto" data-auto>auto play</button></div></div>
+    <div class="ms-output-column"><div class="ms-sim-panel-label">// processing output <span data-endpoint>POST /api/documents/upload</span></div><div class="ms-json-window"><pre data-payload>// Select a scenario and press next →</pre><button type="button" class="copy-btn ms-copy" data-copy>copy</button></div><p class="ms-step-description" data-description>Select a stage to inspect its responsibility.</p></div>
+  </div>
+</section>
+
+<script define:vars={{ scenarios }}>
+  const root = document.querySelector('[data-ms-simulation]');
+  if (root) {
+    const trace = root.querySelector('[data-trace]');
+    const payload = root.querySelector('[data-payload]');
+    const description = root.querySelector('[data-description]');
+    const progress = root.querySelector('[data-progress]');
+    const bar = root.querySelector('[data-progress-bar]');
+    const endpoint = root.querySelector('[data-endpoint]');
+    const next = root.querySelector('[data-next]');
+    const prev = root.querySelector('[data-prev]');
+    const reset = root.querySelector('[data-reset]');
+    const auto = root.querySelector('[data-auto]');
+    let currentScenario = 'ingestion';
+    let currentStep = -1;
+    let timer;
+    const steps = () => scenarios[currentScenario].steps;
+    const setState = (scenario, stepIndex) => { currentScenario = scenario; currentStep = stepIndex; render(); };
+    const render = () => {
+      const list = steps();
+      trace.innerHTML = list.map((item, index) => `<button type="button" class="ms-trace-step ${index === currentStep ? 'is-current' : ''} ${index < currentStep ? 'is-complete' : ''}" data-step="${index}"><span class="ms-trace-index">[${item.id}]</span><span class="ms-trace-state">${index < currentStep ? 'done' : index === currentStep ? 'run' : 'wait'}</span><span>${item.label}</span><small>${item.tech}</small></button>`).join('');
+      trace.querySelectorAll('[data-step]').forEach((button) => button.addEventListener('click', () => setState(currentScenario, Number(button.dataset.step))));
+      const item = currentStep >= 0 ? list[currentStep] : null;
+      payload.textContent = item ? item.payload : '// Select a scenario and press next →';
+      description.textContent = item ? `${item.label}: ${item.desc}` : 'Select a stage to inspect its responsibility.';
+      progress.textContent = `${Math.max(currentStep + 1, 0)} / ${list.length}`;
+      bar.style.width = `${currentStep < 0 ? 0 : ((currentStep + 1) / list.length) * 100}%`;
+      endpoint.textContent = scenarios[currentScenario].endpoint;
+      prev.disabled = currentStep <= 0;
+      next.disabled = currentStep >= list.length - 1;
+      root.querySelectorAll('[data-scenario]').forEach((tab) => { const active = tab.dataset.scenario === currentScenario; tab.classList.toggle('is-active', active); tab.setAttribute('aria-selected', String(active)); });
+    };
+    root.querySelectorAll('[data-scenario]').forEach((tab) => tab.addEventListener('click', () => { clearInterval(timer); auto.textContent = 'auto play'; setState(tab.dataset.scenario, -1); }));
+    next.addEventListener('click', () => { if (currentStep < steps().length - 1) setState(currentScenario, currentStep + 1); });
+    prev.addEventListener('click', () => { if (currentStep > 0) setState(currentScenario, currentStep - 1); });
+    reset.addEventListener('click', () => { clearInterval(timer); auto.textContent = 'auto play'; setState(currentScenario, -1); });
+    auto.addEventListener('click', () => { if (timer) { clearInterval(timer); timer = undefined; auto.textContent = 'auto play'; return; } auto.textContent = 'pause'; timer = setInterval(() => { if (currentStep >= steps().length - 1) { clearInterval(timer); timer = undefined; auto.textContent = 'auto play'; } else setState(currentScenario, currentStep + 1); }, 1300); });
+    root.querySelector('[data-copy]').addEventListener('click', () => { navigator.clipboard?.writeText(payload.textContent || '').then(() => { root.querySelector('[data-copy]').textContent = 'copied!'; setTimeout(() => { root.querySelector('[data-copy]').textContent = 'copy'; }, 1200); }); });
+    root.addEventListener('keydown', (event) => { if (event.key === 'ArrowRight') next.click(); if (event.key === 'ArrowLeft') prev.click(); });
+    render();
+  }
+</script>

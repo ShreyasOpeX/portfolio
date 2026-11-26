@@ -1,0 +1,141 @@
+---
+// Subtle distributed-system topology background for the hero section
+// Pure CSS/SVG animation - no canvas, no heavy libraries
+// Respects prefers-reduced-motion
+---
+
+<div class="topology-bg" aria-hidden="true" id="infra-bg">
+  <svg
+    viewBox="0 0 1200 600"
+    xmlns="http://www.w3.org/2000/svg"
+    class="w-full h-full"
+    style="opacity:0.35; position:absolute; inset:0;"
+    preserveAspectRatio="xMidYMid slice"
+  >
+    <defs>
+      <!-- Sync edge path for packet animation -->
+      <path id="edge-1" d="M 220 180 L 400 180"/>
+      <path id="edge-2" d="M 560 180 L 740 180"/>
+      <path id="edge-3" d="M 740 180 L 740 320"/>
+      <path id="edge-4" d="M 400 180 L 400 320"/>
+      <path id="edge-5" d="M 400 320 L 220 420"/>
+      <path id="edge-6" d="M 740 320 L 920 420"/>
+      <path id="edge-7" d="M 920 180 L 1050 300"/>
+    </defs>
+
+    <!-- Background grid dots -->
+    <pattern id="dot-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="20" cy="20" r="1" fill="var(--border,#26313D)" opacity="0.6"/>
+    </pattern>
+    <rect width="1200" height="600" fill="url(#dot-grid)"/>
+
+    <!-- ── Edges (connection lines) ── -->
+    <!-- Sync lines (blue, solid) -->
+    <line x1="220" y1="180" x2="400" y2="180" stroke="#60A5FA" stroke-width="1" opacity="0.4"/>
+    <line x1="400" y1="180" x2="560" y2="180" stroke="#60A5FA" stroke-width="1" opacity="0.4"/>
+    <!-- Async lines (green, dashed) -->
+    <line x1="560" y1="180" x2="740" y2="180" stroke="#34D399" stroke-width="1" opacity="0.4" stroke-dasharray="6 3"/>
+    <line x1="740" y1="180" x2="740" y2="320" stroke="#34D399" stroke-width="1" opacity="0.4" stroke-dasharray="6 3"/>
+    <line x1="400" y1="180" x2="400" y2="320" stroke="#34D399" stroke-width="1" opacity="0.35" stroke-dasharray="5 3"/>
+    <line x1="400" y1="320" x2="220" y2="420" stroke="#A78BFA" stroke-width="1" opacity="0.3" stroke-dasharray="4 3"/>
+    <line x1="740" y1="320" x2="920" y2="420" stroke="#A78BFA" stroke-width="1" opacity="0.3" stroke-dasharray="4 3"/>
+    <line x1="920" y1="180" x2="920" y2="320" stroke="#34D399" stroke-width="1" opacity="0.35" stroke-dasharray="5 3"/>
+    <line x1="560" y1="280" x2="400" y2="320" stroke="#60A5FA" stroke-width="1" opacity="0.3"/>
+    <!-- gRPC line -->
+    <line x1="740" y1="230" x2="920" y2="180" stroke="#60A5FA" stroke-width="1" opacity="0.3"/>
+
+    <!-- ── Service nodes ── -->
+    <!-- Client -->
+    <rect x="140" y="156" width="80" height="48" rx="6" fill="#161D26" stroke="#26313D" stroke-width="1"/>
+    <text x="180" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#A3ADB9">Client</text>
+    <text x="180" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">HTTP</text>
+
+    <!-- API Gateway -->
+    <rect x="320" y="156" width="80" height="48" rx="6" fill="#161D26" stroke="#34D399" stroke-width="1.5"/>
+    <text x="360" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#34D399">Gateway</text>
+    <text x="360" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">Auth · RL</text>
+
+    <!-- Spring Boot -->
+    <rect x="480" y="156" width="80" height="48" rx="6" fill="#161D26" stroke="#34D399" stroke-width="1.5"/>
+    <text x="520" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#A3ADB9">Service</text>
+    <text x="520" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">Spring Boot</text>
+
+    <!-- Kafka Broker -->
+    <rect x="660" y="156" width="80" height="48" rx="6" fill="#0D1117" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <text x="700" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#34D399">Kafka</text>
+    <text x="700" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">broker</text>
+
+    <!-- Consumer -->
+    <rect x="840" y="156" width="80" height="48" rx="6" fill="#161D26" stroke="#26313D" stroke-width="1"/>
+    <text x="880" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#A3ADB9">Consumer</text>
+    <text x="880" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">worker</text>
+
+    <!-- gRPC svc -->
+    <rect x="840" y="296" width="80" height="48" rx="6" fill="#161D26" stroke="#60A5FA" stroke-width="1"/>
+    <text x="880" y="315" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#60A5FA">gRPC</text>
+    <text x="880" y="330" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">service</text>
+
+    <!-- PostgreSQL -->
+    <rect x="140" y="396" width="80" height="48" rx="6" fill="#161D26" stroke="#A78BFA" stroke-width="1"/>
+    <text x="180" y="415" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#A78BFA">Postgres</text>
+    <text x="180" y="430" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">persistence</text>
+
+    <!-- Kafka consumer worker 2 -->
+    <rect x="660" y="296" width="80" height="48" rx="6" fill="#161D26" stroke="#26313D" stroke-width="1"/>
+    <text x="700" y="315" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#A3ADB9">Worker</text>
+    <text x="700" y="330" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">consumer</text>
+
+    <!-- AI service -->
+    <rect x="320" y="296" width="80" height="48" rx="6" fill="#161D26" stroke="#C084FC" stroke-width="1"/>
+    <text x="360" y="315" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#C084FC">AI svc</text>
+    <text x="360" y="330" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#718096">inference</text>
+
+    <!-- ── Animated packets ── -->
+    <!-- Green async packets (Kafka) -->
+    <circle r="3" fill="#34D399" opacity="0">
+      <animateMotion dur="3.2s" repeatCount="indefinite" begin="0s">
+        <mpath href="#edge-2"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.2s" repeatCount="indefinite" begin="0s"/>
+    </circle>
+    <circle r="3" fill="#34D399" opacity="0">
+      <animateMotion dur="3.2s" repeatCount="indefinite" begin="1.6s">
+        <mpath href="#edge-3"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.2s" repeatCount="indefinite" begin="1.6s"/>
+    </circle>
+    <!-- Blue sync packets (REST) -->
+    <circle r="2.5" fill="#60A5FA" opacity="0">
+      <animateMotion dur="2.4s" repeatCount="indefinite" begin="0.4s">
+        <mpath href="#edge-1"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="2.4s" repeatCount="indefinite" begin="0.4s"/>
+    </circle>
+    <circle r="2.5" fill="#60A5FA" opacity="0">
+      <animateMotion dur="2.8s" repeatCount="indefinite" begin="1.2s">
+        <mpath href="#edge-7"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="2.8s" repeatCount="indefinite" begin="1.2s"/>
+    </circle>
+    <!-- Violet storage packet -->
+    <circle r="2.5" fill="#A78BFA" opacity="0">
+      <animateMotion dur="4s" repeatCount="indefinite" begin="0.8s">
+        <mpath href="#edge-5"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;0.8;0.8;0" keyTimes="0;0.1;0.9;1" dur="4s" repeatCount="indefinite" begin="0.8s"/>
+    </circle>
+
+    <!-- Illustrative label (bottom right) -->
+    <text x="1100" y="560" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="#718096" opacity="0.7">illustrative topology</text>
+  </svg>
+</div>
+
+<style>
+  /* Reduced motion: hide all packets */
+  @media (prefers-reduced-motion: reduce) {
+    #infra-bg circle[r="3"],
+    #infra-bg circle[r="2.5"] {
+      display: none;
+    }
+  }
+</style>

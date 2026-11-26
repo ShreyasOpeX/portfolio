@@ -1,0 +1,170 @@
+---
+import { skillGroups } from '../../data/skills';
+import { getLogoForSkill } from '../../data/techLogos';
+
+const levelBorderColor: Record<string, string> = {
+  core:     'var(--accent)',
+  applied:  'var(--color-sync, #60A5FA)',
+  exposure: 'var(--border)',
+  learning: 'var(--border)',
+};
+const levelLabelColor: Record<string, string> = {
+  core:     'var(--accent)',
+  applied:  'var(--color-sync, #60A5FA)',
+  exposure: 'var(--text-muted)',
+  learning: 'var(--text-muted)',
+};
+---
+
+<section id="skills" class="container-content py-20">
+  <hr class="divider mb-16" />
+
+  <div class="mb-10">
+    <p class="section-label mb-3">Capabilities</p>
+    <h2 class="text-2xl sm:text-3xl font-semibold mb-3">Technical depth</h2>
+    <p class="max-w-xl" style="color: var(--text-secondary);">
+      Skills grouped by domain. Primary skills are actively used in projects; exposure areas have been studied or applied in smaller contexts.
+    </p>
+  </div>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    {skillGroups.map(group => (
+      <div
+        class="rounded-lg p-5"
+        style={`background: var(--bg-elevated); border: 1px solid ${levelBorderColor[group.level]};`}
+      >
+        <!-- Group header -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold" style="color: var(--text-primary);">{group.domain}</h3>
+          <span
+            class="font-mono text-xs px-2 py-0.5 rounded"
+            style={`color: ${levelLabelColor[group.level]}; background: var(--bg-base); border: 1px solid var(--border);`}
+          >
+            {group.levelLabel}
+          </span>
+        </div>
+
+        <!-- Skill pills with logos -->
+        <div class="flex flex-wrap gap-2">
+          {group.skills.map(skill => {
+            const logo = getLogoForSkill(skill);
+            const isCore = group.level === 'core' || group.level === 'applied';
+            return (
+              <span
+                class="skill-pill"
+                title={skill}
+                data-logo={logo?.id ?? 'none'}
+              >
+                {logo && logo.svgPath !== '' && (
+                  <span class="skill-logo" aria-hidden="true">
+                    <svg
+                      viewBox={logo.viewBox ?? '0 0 24 24'}
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="13"
+                      height="13"
+                      style={`fill: ${logo.darkColor}; flex-shrink: 0;`}
+                      class="skill-logo-svg"
+                      data-dark={logo.darkColor}
+                      data-light={logo.lightColor}
+                      set:html={logo.svgPath}
+                    />
+                  </span>
+                )}
+                <span
+                  class="skill-name"
+                  style={`color: ${isCore ? 'var(--text-secondary)' : 'var(--text-muted)'};`}
+                >
+                  {skill}
+                </span>
+              </span>
+            );
+          })}
+        </div>
+
+        <!-- Project links -->
+        {group.projectLinks && group.projectLinks.length > 0 && (
+          <div class="mt-4 pt-3 flex flex-wrap gap-2" style="border-top: 1px solid var(--border);">
+            <span class="text-xs font-mono" style="color: var(--text-muted);">used in:</span>
+            {group.projectLinks.map(slug => (
+              <a
+                href={`/projects/${slug}/`}
+                class="font-mono text-xs transition-colors duration-150"
+                style="color: var(--text-muted);"
+                onmouseover="this.style.color='var(--accent)'"
+                onmouseout="this.style.color='var(--text-muted)'"
+              >
+                /{slug}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+</section>
+
+<!-- Theme-aware logo color switching -->
+<script is:inline>
+  (function () {
+    function applyLogoTheme() {
+      var isLight = document.documentElement.classList.contains('light');
+      document.querySelectorAll('.skill-logo-svg').forEach(function (svg) {
+        var color = isLight ? svg.getAttribute('data-light') : svg.getAttribute('data-dark');
+        if (color) svg.style.fill = color;
+      });
+    }
+
+    applyLogoTheme();
+
+    // Patch __toggleTheme to also re-apply logo colors
+    var _orig = window.__toggleTheme;
+    window.__toggleTheme = function () {
+      _orig && _orig();
+      applyLogoTheme();
+    };
+  })();
+</script>
+
+<style>
+  .skill-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    transition: border-color 0.15s, background 0.15s;
+    cursor: default;
+    max-width: 100%;
+  }
+  .skill-pill:hover {
+    border-color: var(--accent);
+    background: var(--bg-surface, var(--bg-secondary));
+  }
+  .skill-logo {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .skill-logo-svg {
+    display: block;
+  }
+  .skill-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Light mode overrides for readability */
+  :root.light .skill-pill {
+    background: #FFFFFF;
+    border-color: var(--border);
+  }
+  :root.light .skill-pill:hover {
+    border-color: var(--accent);
+    background: var(--bg-secondary);
+  }
+</style>

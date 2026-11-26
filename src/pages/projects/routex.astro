@@ -1,0 +1,81 @@
+---
+import CaseStudyLayout from '../../layouts/CaseStudyLayout.astro';
+import { getProjectBySlug } from '../../data/projects';
+
+const project = getProjectBySlug('routex')!;
+---
+
+<CaseStudyLayout project={project}>
+
+  <h2>Overview</h2>
+  <p>
+    RouteX is a Java 21 / Spring Boot application that demonstrates Kafka's event-driven patterns in a ride-dispatch context. It is a learning laboratory — the business domain is kept deliberately simple so that Kafka behavior stays visible. It is not a complete ride-sharing business platform.
+  </p>
+  <p>
+    The current implementation assigns an in-memory demonstration driver. This is intentional — the goal is demonstrating the event-driven pipeline, not building a geographically distributed driver-matching system.
+  </p>
+
+  <h2>Event pipeline</h2>
+
+  <pre><code>HTTP ride request
+     ↓
+RideRequestController
+     ↓ RideRequestedEvent (key: rideId)
+ride-requested (3 partitions)
+     ↓ driver-matching-group (concurrency: 3)
+DriverMatchingConsumer
+     ↓
+DriverAssignmentService → (in-memory demo driver)
+     ↓
+DriverAssignmentProducer
+     ↓ DriverAssignmentEvent (key: rideId)
+driver-assigned (3 partitions)
+     ↓ notification-group
+Notification consumer</code></pre>
+
+  <h2>What RouteX demonstrates</h2>
+
+  <h3>Event-driven decoupling</h3>
+  <p>
+    Ride intake does not call matching or notification directly. It publishes a <code>RideRequestedEvent</code> and returns <code>202 Accepted</code> immediately. Matching and notification are independent consumers with their own progress and failure handling. This is the core pattern for services that must evolve, scale or recover independently.
+  </p>
+
+  <h3>Topics and partitions</h3>
+  <p>
+    Three application topics, each with three partitions. Records are keyed by <code>rideId</code>, so all events for a given ride are routed to the same partition and processed in order.
+  </p>
+
+  <h3>Consumer group isolation</h3>
+  <p>
+    <code>driver-matching-group</code> and <code>notification-group</code> are independent consumer groups. Each maintains its own committed offset. The notification consumer does not need to coordinate with or wait for the matching consumer.
+  </p>
+
+  <h3>Manual acknowledgement</h3>
+  <p>
+    Kafka offsets are committed manually after the listener completes its work successfully. This prevents offset advancement when processing fails, ensuring the message is redelivered after a consumer restart or error.
+  </p>
+
+  <h3>Retry and dead-letter recovery</h3>
+  <p>
+    Failed records go through three bounded retries with a fixed backoff (2 seconds). After retries are exhausted, the record is routed to <code>ride-requested-dlt</code> and consumed by a <code>DeadLetterConsumer</code> for inspection and controlled replay. The DLT is a recovery boundary, not a discard queue.
+  </p>
+
+  <h3>Observability</h3>
+  <p>
+    Kafka UI provides a local web interface for inspecting topics, partitions, consumer groups and offsets. Spring Boot Actuator exposes health and metrics endpoints. Rebalance events are logged, making partition assignment changes visible.
+  </p>
+
+  <h2>Running locally</h2>
+  <pre><code>docker compose up -d   # starts Kafka (KRaft) + Kafka UI
+mvn spring-boot:run    # starts the application</code></pre>
+  <p>Kafka UI is available at <code>http://localhost:8081</code>. Kafka is at <code>localhost:9092</code>.</p>
+
+  <h2>What RouteX does not demonstrate</h2>
+  <ul>
+    <li>Real geographically distributed driver matching</li>
+    <li>Driver availability, location tracking or ETA estimation</li>
+    <li>Payment processing or business logic beyond the event pipeline</li>
+    <li>Production security, authentication or multi-instance deployment</li>
+  </ul>
+
+</CaseStudyLayout>

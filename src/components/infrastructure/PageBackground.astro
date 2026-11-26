@@ -1,0 +1,275 @@
+---
+// Full-page infrastructure background.
+// Fixed-position, pointer-events-none, behind all content.
+// Three visual zones:
+//   Zone A (top ~100vh)  — dense topology, nodes + packets (existing hero region)
+//   Zone B (mid ~100vh)  — mid-density grid + sparse connections
+//   Zone C (lower)       — very sparse dot grid, fades out
+// Pure SVG + CSS animation — no canvas, no JS dependencies.
+// Respects prefers-reduced-motion.
+---
+
+<div
+  id="page-bg"
+  aria-hidden="true"
+  style="position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;"
+>
+  <div class="page-bg-pointer-glow"></div>
+  <!-- ───────────────────────────────────────────────
+       Layer 1: Static infrastructure grid (full page)
+       Dots + faint connection lines repeating vertically
+  ─────────────────────────────────────────────────── -->
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="page-bg-grid"
+    style="position:absolute; inset:0; width:100%; height:100%;"
+    preserveAspectRatio="xMidYMid slice"
+  >
+    <defs>
+      <!-- Dot grid tile -->
+      <pattern id="pbg-dots" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
+        <circle cx="24" cy="24" r="1" fill="var(--border,#26313D)" opacity="0.55"/>
+      </pattern>
+
+      <!-- Repeating vertical fade mask: opaque top → transparent bottom -->
+      <linearGradient id="pbg-fade-v" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+        <stop offset="0%"   stop-color="white" stop-opacity="0.6"/>
+        <stop offset="40%"  stop-color="white" stop-opacity="0.35"/>
+        <stop offset="75%"  stop-color="white" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="white" stop-opacity="0.08"/>
+      </linearGradient>
+      <mask id="pbg-mask-v">
+        <rect width="100%" height="100%" fill="url(#pbg-fade-v)"/>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#pbg-dots)" mask="url(#pbg-mask-v)"/>
+  </svg>
+
+  <!-- ───────────────────────────────────────────────
+       Layer 2: Topology SVG (hero region + below)
+       Fixed 1200×2400 coordinate space, scaled via viewBox
+  ─────────────────────────────────────────────────── -->
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 1200 2200"
+    class="page-bg-topo"
+    style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.28;"
+    preserveAspectRatio="xMidYTop slice"
+  >
+    <defs>
+      <!-- Packet animation paths — hero zone -->
+      <path id="pbg-e1" d="M 220 180 L 400 180"/>
+      <path id="pbg-e2" d="M 560 180 L 740 180"/>
+      <path id="pbg-e3" d="M 740 180 L 740 340"/>
+      <path id="pbg-e4" d="M 400 180 L 400 340"/>
+      <path id="pbg-e5" d="M 400 340 L 220 460"/>
+      <path id="pbg-e6" d="M 740 340 L 940 460"/>
+      <path id="pbg-e7" d="M 940 180 L 1080 320"/>
+      <!-- Packet animation paths — mid zone -->
+      <path id="pbg-e8"  d="M 300 780 L 560 780"/>
+      <path id="pbg-e9"  d="M 560 780 L 760 920"/>
+      <path id="pbg-e10" d="M 760 920 L 980 780"/>
+      <path id="pbg-e11" d="M 980 780 L 980 1050"/>
+      <!-- Packet animation paths — lower zone -->
+      <path id="pbg-e12" d="M 200 1300 L 500 1300"/>
+      <path id="pbg-e13" d="M 500 1300 L 700 1480"/>
+    </defs>
+
+    <!-- Larger infrastructure routes create depth with fewer, stronger forms. -->
+    <g class="page-bg-macro" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 72 590 H 330 L 470 690 H 760 L 930 570 H 1130" stroke="#34D399" stroke-width="3" stroke-dasharray="12 10" opacity="0.48"/>
+      <path d="M 105 1120 H 300 L 420 1010 H 690 L 825 1130 H 1090" stroke="#60A5FA" stroke-width="2.6" opacity="0.42"/>
+      <path d="M 64 1760 H 250 L 390 1640 H 650 L 790 1760 H 1140" stroke="#34D399" stroke-width="2.8" stroke-dasharray="16 12" opacity="0.38"/>
+      <path d="M 330 690 V 820 M 825 1130 V 1280 M 650 1640 V 1510" stroke="#A78BFA" stroke-width="2.2" stroke-dasharray="7 9" opacity="0.32"/>
+      <circle cx="72" cy="590" r="11" fill="var(--bg-base,#090C10)" stroke="#34D399" stroke-width="3"/>
+      <circle cx="470" cy="690" r="13" fill="var(--bg-base,#090C10)" stroke="#34D399" stroke-width="3"/>
+      <circle cx="930" cy="570" r="11" fill="var(--bg-base,#090C10)" stroke="#34D399" stroke-width="3"/>
+      <circle cx="105" cy="1120" r="10" fill="var(--bg-base,#090C10)" stroke="#60A5FA" stroke-width="2.5"/>
+      <circle cx="690" cy="1010" r="14" fill="var(--bg-base,#090C10)" stroke="#60A5FA" stroke-width="3"/>
+      <circle cx="1090" cy="1120" r="10" fill="var(--bg-base,#090C10)" stroke="#60A5FA" stroke-width="2.5"/>
+      <circle cx="390" cy="1640" r="12" fill="var(--bg-base,#090C10)" stroke="#34D399" stroke-width="3"/>
+      <circle cx="790" cy="1760" r="12" fill="var(--bg-base,#090C10)" stroke="#34D399" stroke-width="3"/>
+    </g>
+
+    <!-- ═══════ ZONE A: Hero topology ═══════ -->
+
+    <!-- Edges -->
+    <line x1="220" y1="180" x2="400" y2="180" stroke="#60A5FA" stroke-width="1" opacity="0.5"/>
+    <line x1="400" y1="180" x2="560" y2="180" stroke="#60A5FA" stroke-width="1" opacity="0.45"/>
+    <line x1="560" y1="180" x2="740" y2="180" stroke="#34D399" stroke-width="1" stroke-dasharray="6 3" opacity="0.5"/>
+    <line x1="740" y1="180" x2="740" y2="340" stroke="#34D399" stroke-width="1" stroke-dasharray="6 3" opacity="0.45"/>
+    <line x1="400" y1="180" x2="400" y2="340" stroke="#34D399" stroke-width="1" stroke-dasharray="5 3" opacity="0.4"/>
+    <line x1="400" y1="340" x2="220" y2="460" stroke="#A78BFA" stroke-width="1" stroke-dasharray="4 3" opacity="0.35"/>
+    <line x1="740" y1="340" x2="940" y2="460" stroke="#A78BFA" stroke-width="1" stroke-dasharray="4 3" opacity="0.35"/>
+    <line x1="940" y1="180" x2="940" y2="340" stroke="#34D399" stroke-width="1" stroke-dasharray="5 3" opacity="0.4"/>
+    <line x1="560" y1="280" x2="400" y2="340" stroke="#60A5FA" stroke-width="1" opacity="0.3"/>
+    <line x1="740" y1="240" x2="940" y2="180" stroke="#60A5FA" stroke-width="1" opacity="0.3"/>
+
+    <!-- Nodes (hero zone) -->
+    <rect x="140" y="156" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="var(--border,#26313D)" stroke-width="1"/>
+    <text x="180" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-secondary,#A3ADB9)">Client</text>
+    <text x="180" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">HTTP</text>
+
+    <rect x="320" y="156" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#34D399" stroke-width="1.5"/>
+    <text x="360" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#34D399">Gateway</text>
+    <text x="360" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">Auth · RL</text>
+
+    <rect x="480" y="156" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#34D399" stroke-width="1.5"/>
+    <text x="520" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-secondary,#A3ADB9)">Service</text>
+    <text x="520" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">Spring Boot</text>
+
+    <rect x="660" y="156" width="80" height="48" rx="5" fill="var(--bg-secondary,#0D1117)" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <text x="700" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#34D399">Kafka</text>
+    <text x="700" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">broker</text>
+
+    <rect x="860" y="156" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="var(--border,#26313D)" stroke-width="1"/>
+    <text x="900" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-secondary,#A3ADB9)">Consumer</text>
+    <text x="900" y="190" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">worker</text>
+
+    <rect x="860" y="316" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#60A5FA" stroke-width="1"/>
+    <text x="900" y="335" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#60A5FA">gRPC</text>
+    <text x="900" y="350" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">service</text>
+
+    <rect x="140" y="436" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#A78BFA" stroke-width="1"/>
+    <text x="180" y="455" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#A78BFA">Postgres</text>
+    <text x="180" y="470" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">persistence</text>
+
+    <rect x="320" y="316" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#C084FC" stroke-width="1"/>
+    <text x="360" y="335" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#C084FC">AI svc</text>
+    <text x="360" y="350" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">inference</text>
+
+    <rect x="660" y="316" width="80" height="48" rx="5" fill="var(--bg-elevated,#161D26)" stroke="var(--border,#26313D)" stroke-width="1"/>
+    <text x="700" y="335" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-secondary,#A3ADB9)">Worker</text>
+    <text x="700" y="350" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)">consumer</text>
+
+    <!-- ═══════ ZONE B: Mid-page topology (projects / experience) ═══════ -->
+
+    <!-- Sparse connections -->
+    <line x1="300" y1="780" x2="560" y2="780" stroke="#34D399" stroke-width="0.8" stroke-dasharray="6 4" opacity="0.35"/>
+    <line x1="560" y1="780" x2="760" y2="920" stroke="#60A5FA" stroke-width="0.8" opacity="0.3"/>
+    <line x1="760" y1="920" x2="980" y2="780" stroke="#34D399" stroke-width="0.8" stroke-dasharray="5 4" opacity="0.3"/>
+    <line x1="980" y1="780" x2="980" y2="1050" stroke="#A78BFA" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.28"/>
+    <line x1="560" y1="780" x2="560" y2="1050" stroke="#34D399" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.25"/>
+    <line x1="300" y1="780" x2="150" y2="950" stroke="#A78BFA" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.25"/>
+
+    <!-- Mid nodes (smaller, more transparent) -->
+    <rect x="260" y="758" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#34D399" stroke-width="1" opacity="0.65"/>
+    <text x="300" y="775" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#34D399" opacity="0.8">Event bus</text>
+    <text x="300" y="789" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.7">Kafka</text>
+
+    <rect x="520" y="758" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="var(--border,#26313D)" stroke-width="1" opacity="0.6"/>
+    <text x="560" y="775" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-secondary,#A3ADB9)" opacity="0.75">Service</text>
+    <text x="560" y="789" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.7">outbox</text>
+
+    <rect x="720" y="898" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#60A5FA" stroke-width="1" opacity="0.6"/>
+    <text x="760" y="915" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#60A5FA" opacity="0.75">gRPC</text>
+    <text x="760" y="929" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.7">rpc call</text>
+
+    <rect x="940" y="758" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#A78BFA" stroke-width="1" opacity="0.6"/>
+    <text x="980" y="775" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#A78BFA" opacity="0.75">Vector DB</text>
+    <text x="980" y="789" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.7">pgvector</text>
+
+    <rect x="940" y="1030" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="var(--border,#26313D)" stroke-width="1" opacity="0.55"/>
+    <text x="980" y="1047" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-secondary,#A3ADB9)" opacity="0.7">Audit log</text>
+    <text x="980" y="1061" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.65">durable</text>
+
+    <rect x="520" y="1030" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="var(--border,#26313D)" stroke-width="1" opacity="0.5"/>
+    <text x="560" y="1047" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-secondary,#A3ADB9)" opacity="0.65">Consumer</text>
+    <text x="560" y="1061" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.6">group</text>
+
+    <rect x="110" y="930" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#C084FC" stroke-width="1" opacity="0.55"/>
+    <text x="150" y="947" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#C084FC" opacity="0.7">RAG</text>
+    <text x="150" y="961" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.65">pipeline</text>
+
+    <!-- ═══════ ZONE C: Lower page (skills / achievements) ═══════ -->
+
+    <line x1="200" y1="1300" x2="500" y2="1300" stroke="#34D399" stroke-width="0.7" stroke-dasharray="6 5" opacity="0.2"/>
+    <line x1="500" y1="1300" x2="700" y2="1480" stroke="#60A5FA" stroke-width="0.7" opacity="0.18"/>
+    <line x1="700" y1="1480" x2="950" y2="1380" stroke="#A78BFA" stroke-width="0.7" stroke-dasharray="5 5" opacity="0.18"/>
+    <line x1="950" y1="1380" x2="1100" y2="1550" stroke="#34D399" stroke-width="0.7" stroke-dasharray="4 5" opacity="0.15"/>
+
+    <rect x="160" y="1278" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="var(--border,#26313D)" stroke-width="1" opacity="0.4"/>
+    <text x="200" y="1300" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-secondary,#A3ADB9)" opacity="0.5">DB</text>
+
+    <rect x="460" y="1278" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#34D399" stroke-width="1" opacity="0.4"/>
+    <text x="500" y="1295" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#34D399" opacity="0.5">Message</text>
+    <text x="500" y="1309" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-muted,#718096)" opacity="0.45">broker</text>
+
+    <rect x="660" y="1458" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#60A5FA" stroke-width="1" opacity="0.35"/>
+    <text x="700" y="1480" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#60A5FA" opacity="0.45">API</text>
+
+    <rect x="910" y="1358" width="80" height="44" rx="5" fill="var(--bg-elevated,#161D26)" stroke="#A78BFA" stroke-width="1" opacity="0.35"/>
+    <text x="950" y="1380" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#A78BFA" opacity="0.4">Vector</text>
+
+    <!-- ═══════ PACKETS: hero zone ═══════ -->
+    <!-- Kafka async (green) -->
+    <circle r="3" fill="#34D399" opacity="0">
+      <animateMotion dur="3.2s" repeatCount="indefinite" begin="0s"><mpath href="#pbg-e2"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.9;0.9;0" keyTimes="0;0.1;0.9;1" dur="3.2s" repeatCount="indefinite" begin="0s"/>
+    </circle>
+    <circle r="3" fill="#34D399" opacity="0">
+      <animateMotion dur="3.2s" repeatCount="indefinite" begin="1.6s"><mpath href="#pbg-e3"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.9;0.9;0" keyTimes="0;0.1;0.9;1" dur="3.2s" repeatCount="indefinite" begin="1.6s"/>
+    </circle>
+    <!-- REST sync (blue) -->
+    <circle r="2.5" fill="#60A5FA" opacity="0">
+      <animateMotion dur="2.4s" repeatCount="indefinite" begin="0.4s"><mpath href="#pbg-e1"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.85;0.85;0" keyTimes="0;0.1;0.9;1" dur="2.4s" repeatCount="indefinite" begin="0.4s"/>
+    </circle>
+    <circle r="2.5" fill="#60A5FA" opacity="0">
+      <animateMotion dur="2.8s" repeatCount="indefinite" begin="1.2s"><mpath href="#pbg-e7"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.85;0.85;0" keyTimes="0;0.1;0.9;1" dur="2.8s" repeatCount="indefinite" begin="1.2s"/>
+    </circle>
+    <!-- Storage (violet) -->
+    <circle r="2.5" fill="#A78BFA" opacity="0">
+      <animateMotion dur="4s" repeatCount="indefinite" begin="0.8s"><mpath href="#pbg-e5"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.75;0.75;0" keyTimes="0;0.1;0.9;1" dur="4s" repeatCount="indefinite" begin="0.8s"/>
+    </circle>
+
+    <!-- ═══════ PACKETS: mid zone (slower, more transparent) ═══════ -->
+    <circle r="2.5" fill="#34D399" opacity="0">
+      <animateMotion dur="4.5s" repeatCount="indefinite" begin="2s"><mpath href="#pbg-e8"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.55;0.55;0" keyTimes="0;0.1;0.9;1" dur="4.5s" repeatCount="indefinite" begin="2s"/>
+    </circle>
+    <circle r="2" fill="#60A5FA" opacity="0">
+      <animateMotion dur="5s" repeatCount="indefinite" begin="1s"><mpath href="#pbg-e9"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.5;0.5;0" keyTimes="0;0.1;0.9;1" dur="5s" repeatCount="indefinite" begin="1s"/>
+    </circle>
+    <circle r="2" fill="#A78BFA" opacity="0">
+      <animateMotion dur="5.5s" repeatCount="indefinite" begin="3s"><mpath href="#pbg-e11"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.45;0.45;0" keyTimes="0;0.1;0.9;1" dur="5.5s" repeatCount="indefinite" begin="3s"/>
+    </circle>
+
+    <!-- ═══════ PACKETS: lower zone (very slow, very faint) ═══════ -->
+    <circle r="2" fill="#34D399" opacity="0">
+      <animateMotion dur="7s" repeatCount="indefinite" begin="1.5s"><mpath href="#pbg-e12"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.3;0.3;0" keyTimes="0;0.1;0.9;1" dur="7s" repeatCount="indefinite" begin="1.5s"/>
+    </circle>
+    <circle r="2" fill="#60A5FA" opacity="0">
+      <animateMotion dur="8s" repeatCount="indefinite" begin="4s"><mpath href="#pbg-e13"/></animateMotion>
+      <animate attributeName="opacity" values="0;0.28;0.28;0" keyTimes="0;0.1;0.9;1" dur="8s" repeatCount="indefinite" begin="4s"/>
+    </circle>
+
+    <!-- Illustrative label -->
+    <text x="1140" y="2140" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted,#718096)" opacity="0.5">illustrative topology</text>
+  </svg>
+</div>
+
+<style>
+  /* Reduced motion: no animated packets, keep static grid */
+  @media (prefers-reduced-motion: reduce) {
+    #page-bg circle,
+    #page-bg .page-bg-macro {
+      display: none !important;
+    }
+  }
+
+  /* Light mode: lighter grid dots, slightly reduced opacity */
+  :root.light #page-bg .page-bg-topo {
+    opacity: 0.12;
+  }
+  :root.light #page-bg .page-bg-grid {
+    opacity: 0.6;
+  }
+  /* Keep dark mode base opacity as defined inline */
+</style>

@@ -1,0 +1,245 @@
+---
+// TradeSentry V2 Architecture Diagram
+---
+<figure class="w-full" aria-label="TradeSentry architecture: REST intake, transactional outbox, Kafka pipeline, AML screening, gRPC-backed investigation agent, case management and audit">
+  <div class="overflow-x-auto rounded-lg" style="background: var(--bg-surface); border: 1px solid var(--border);">
+    <svg viewBox="0 0 920 490" xmlns="http://www.w3.org/2000/svg"
+      style="min-width: 600px; width: 100%; display: block; padding: 16px;"
+      role="img" aria-labelledby="ts2-title">
+      <title id="ts2-title">TradeSentry system architecture diagram</title>
+      <defs>
+        <!-- Blue sync arrowhead -->
+        <marker id="ts-sync" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#60A5FA"/>
+        </marker>
+        <!-- Green async arrowhead -->
+        <marker id="ts-async" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#34D399"/>
+        </marker>
+        <!-- Subtle grid pattern -->
+        <pattern id="ts-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--border-subtle,#1A2330)" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+
+      <!-- Background grid -->
+      <rect width="920" height="490" fill="url(#ts-grid)" opacity="0.5"/>
+
+      <!-- ═══════════════════════════════ LEGEND ═══════════════════════════════ -->
+      <g transform="translate(16,14)">
+        <rect width="320" height="26" rx="4" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+        <line x1="10" y1="13" x2="30" y2="13" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#ts-sync)"/>
+        <text x="35" y="17" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">sync / REST / gRPC</text>
+        <line x1="155" y1="13" x2="175" y2="13" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ts-async)"/>
+        <text x="180" y="17" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">async / Kafka</text>
+      </g>
+
+      <!-- ═══════════════════════════════ ROW 1: INTAKE PIPELINE ═══════════════════════════════ -->
+
+      <!-- Client -->
+      <rect x="20" y="60" width="88" height="40" rx="5" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="500" font-size="12" fill="var(--text-secondary)">
+        <tspan x="64" y="84">Client</tspan>
+      </text>
+
+      <!-- → core-service -->
+      <line x1="108" y1="80" x2="142" y2="80" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#ts-sync)"/>
+      <text x="125" y="75" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">POST /api/tx</text>
+
+      <!-- core-service -->
+      <rect x="142" y="50" width="170" height="80" rx="5" fill="var(--bg-elevated)" stroke="#34D399" stroke-width="1.5"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" font-size="12" fill="var(--text-primary)">
+        <tspan x="227" y="72">core-service</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-secondary)">
+        <tspan x="227" y="88">Auth · Rate limit · Outbox</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--color-storage,#A78BFA)">
+        <tspan x="227" y="103">PostgreSQL outbox</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">
+        <tspan x="227" y="118">:8080</tspan>
+      </text>
+
+      <!-- → Kafka -->
+      <line x1="312" y1="88" x2="346" y2="88" stroke="#34D399" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ts-async)"/>
+      <text x="329" y="83" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">outbox relay</text>
+
+      <!-- Kafka broker -->
+      <rect x="346" y="50" width="175" height="80" rx="5" fill="var(--bg-surface)" stroke="#34D399" stroke-width="1.5" stroke-dasharray="5 2"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" font-size="12" fill="#34D399">
+        <tspan x="434" y="72">Apache Kafka</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="434" y="88">transactions.ingested</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="434" y="102">transactions.flagged</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="434" y="116">transactions.adjudicated</tspan>
+      </text>
+
+      <!-- → Screening -->
+      <line x1="521" y1="80" x2="556" y2="80" stroke="#34D399" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ts-async)"/>
+
+      <!-- Screening service -->
+      <rect x="556" y="58" width="140" height="58" rx="5" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="500" font-size="12" fill="var(--text-secondary)">
+        <tspan x="626" y="77">Screening</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="626" y="92">Deterministic AML rules</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">
+        <tspan x="626" y="106">Idempotent inbox</tspan>
+      </text>
+
+      <!-- Screening → back to Kafka (tx.flagged) - curved path going down and left -->
+      <path d="M 626 116 L 626 145 L 434 145 L 434 130" fill="none" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ts-async)"/>
+      <text x="530" y="160" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">tx.flagged →</text>
+
+      <!-- ═══════════════════════════════ ROW 2: INVESTIGATION ═══════════════════════════════ -->
+
+      <!-- StateGraph inset (left) -->
+      <rect x="20" y="186" width="170" height="175" rx="5" fill="var(--bg-surface)" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 2"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="105" y="202">Investigation StateGraph</tspan>
+      </text>
+
+      <rect x="35" y="210" width="140" height="28" rx="4" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="var(--text-secondary)">
+        <tspan x="105" y="229">Enrich (gRPC)</tspan>
+      </text>
+
+      <line x1="105" y1="238" x2="105" y2="250" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#ts-sync)"/>
+
+      <rect x="35" y="250" width="140" height="28" rx="4" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="var(--text-secondary)">
+        <tspan x="105" y="269">Retrieve Cases</tspan>
+      </text>
+
+      <line x1="105" y1="278" x2="105" y2="290" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#ts-sync)"/>
+
+      <rect x="35" y="290" width="140" height="28" rx="4" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="var(--text-secondary)">
+        <tspan x="105" y="309">Assess → Decide</tspan>
+      </text>
+
+      <line x1="105" y1="318" x2="105" y2="330" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#ts-sync)"/>
+
+      <rect x="35" y="330" width="140" height="28" rx="4" fill="var(--bg-elevated)" stroke="#34D399" stroke-width="1.5"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#34D399">
+        <tspan x="105" y="349">CLEAR / FLAG / ESC</tspan>
+      </text>
+
+      <!-- Borderline loop arrow -->
+      <path d="M 175 310 Q 192 310 192 275 Q 192 240 175 238" fill="none" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#ts-sync)"/>
+      <text x="196" y="278" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">borderline</text>
+      <text x="196" y="290" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">↺ deeper</text>
+
+      <!-- Kafka → agent (from tx.flagged line going down) -->
+      <line x1="434" y1="175" x2="434" y2="188" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ts-async)"/>
+
+      <!-- agent-service -->
+      <rect x="346" y="188" width="175" height="80" rx="5" fill="var(--bg-elevated)" stroke="#34D399" stroke-width="1.5"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" font-size="12" fill="var(--text-primary)">
+        <tspan x="434" y="210">agent-service</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-secondary)">
+        <tspan x="434" y="226">Java StateGraph</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-secondary)">
+        <tspan x="434" y="241">DeterministicRiskScorer</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--color-storage,#A78BFA)">
+        <tspan x="434" y="256">PostgreSQL</tspan>
+      </text>
+
+      <!-- → case-data-service (gRPC) -->
+      <line x1="521" y1="228" x2="556" y2="228" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#ts-sync)"/>
+      <text x="539" y="222" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#60A5FA">gRPC</text>
+
+      <!-- case-data-service -->
+      <rect x="556" y="192" width="175" height="84" rx="5" fill="var(--bg-elevated)" stroke="#60A5FA" stroke-width="1.5"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="500" font-size="12" fill="var(--text-secondary)">
+        <tspan x="644" y="214">case-data-service</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="644" y="230">GetAccountHistory()</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="644" y="244">RetrieveSimilarCases()</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="644" y="258">server streaming</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#60A5FA">
+        <tspan x="644" y="270">:9090</tspan>
+      </text>
+
+      <!-- agent → Kafka adjudicated -->
+      <path d="M 434 268 L 434 300 L 434 300" fill="none" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ts-async)"/>
+
+      <!-- ═══════════════════════════════ ROW 3: OUTPUT ═══════════════════════════════ -->
+
+      <!-- Kafka → Case management -->
+      <path d="M 346 316 L 266 316 L 266 356" fill="none" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ts-async)"/>
+
+      <!-- Kafka → Audit (direct down) -->
+      <line x1="434" y1="336" x2="434" y2="368" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ts-async)"/>
+
+      <!-- tx.adjudicated label -->
+      <text x="434" y="296" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text-muted)">tx.adjudicated</text>
+
+      <!-- Kafka row-3 visual bridge -->
+      <rect x="346" y="300" width="175" height="36" rx="4" fill="var(--bg-surface)" stroke="#34D399" stroke-width="1" stroke-dasharray="4 2" opacity="0.6"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#34D399">
+        <tspan x="434" y="322">Kafka</tspan>
+      </text>
+
+      <!-- Case management -->
+      <rect x="161" y="356" width="210" height="64" rx="5" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="500" font-size="12" fill="var(--text-secondary)">
+        <tspan x="266" y="376">Case Management</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="266" y="392">investigation_cases</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="266" y="408">sar_cases (on ESCALATE)</tspan>
+      </text>
+
+      <!-- Audit -->
+      <rect x="389" y="368" width="180" height="64" rx="5" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="500" font-size="12" fill="var(--text-secondary)">
+        <tspan x="479" y="388">Audit Consumer</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="479" y="404">Independent consumer group</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="479" y="418">audit_records</tspan>
+      </text>
+
+      <!-- DLQ -->
+      <rect x="696" y="192" width="140" height="48" rx="5" fill="var(--bg-surface)" stroke="var(--color-error,#F87171)" stroke-width="1" stroke-dasharray="3 2"/>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" fill="var(--color-error,#F87171)">
+        <tspan x="766" y="212">transactions.dlq</tspan>
+      </text>
+      <text text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="var(--text-muted)">
+        <tspan x="766" y="228">retry exhausted</tspan>
+      </text>
+      <!-- Arrow from agent to DLQ -->
+      <path d="M 696 228 L 731 228 L 766 240" fill="none" stroke="var(--color-error,#F87171)" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#ts-async)"/>
+      <text x="720" y="222" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--color-error,#F87171)">on retry exhaustion</text>
+
+    </svg>
+  </div>
+  <figcaption class="text-xs mt-2 px-1" style="color: var(--text-muted);">
+    <span style="color:#60A5FA;">━</span> synchronous (REST / gRPC) &nbsp;
+    <span style="color:#34D399;">╌</span> asynchronous (Kafka) &nbsp;
+    <span style="color:#A78BFA;">●</span> storage &nbsp;
+    <span style="color:#F87171;">╌</span> failure path
+  </figcaption>
+</figure>

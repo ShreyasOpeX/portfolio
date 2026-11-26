@@ -1,0 +1,90 @@
+---
+import CaseStudyLayout from '../../layouts/CaseStudyLayout.astro';
+import { getProjectBySlug } from '../../data/projects';
+
+const project = getProjectBySlug('sentinelhub')!;
+---
+
+<CaseStudyLayout project={project}>
+
+  <h2>Overview</h2>
+  <p>
+    SentinelHub is a Java 21 / Spring Boot multi-module reference platform for exploring how an incident investigation system can combine REST at the external boundary, gRPC for internal service communication and Kafka for durable asynchronous business events.
+  </p>
+  <p>
+    The repository is organized as both a backend engineering reference and a codebase. It includes a detailed documentation handbook alongside the source code.
+  </p>
+  <p>
+    <strong>Implementation status:</strong> The gateway-to-CaseService adapter and CaseService protobuf contracts are present. Customer, history, collaboration and notification services are intended bounded contexts; some are stubs. Kafka integration is planned but not yet implemented. The architecture below describes the target design.
+  </p>
+
+  <h2>Target architecture</h2>
+  <pre><code>Browser / API consumer
+        | REST / JSON
+        ↓
+ Gateway Service   (auth, validation, HTTP/JSON ↔ gRPC)
+        | gRPC / Protocol Buffers
+        ├──→ Case Service
+        ├──→ Customer Service
+        ├──→ History Service        → Kafka → Notification Service
+        └──→ Collaboration Service</code></pre>
+
+  <p>
+    REST is the public, browser-friendly boundary. gRPC provides typed low-latency request and streaming paths internally. Kafka preserves business events for independently consuming services that must decouple from the user-facing request.
+  </p>
+
+  <h2>What SentinelHub explores</h2>
+
+  <h3>Contract-first service communication</h3>
+  <p>
+    Services communicate through Protocol Buffers contracts defined in a shared <code>proto</code> module. The contract is the source of truth; generated stubs are compiled artifacts. This enforces explicit, versioned interfaces rather than implicit REST contracts.
+  </p>
+
+  <h3>REST-to-gRPC adaptation</h3>
+  <p>
+    The gateway translates browser REST/JSON requests into internal gRPC calls. This keeps the internal service mesh typed and efficient while presenting a standard HTTP API to clients.
+  </p>
+
+  <h3>gRPC call shapes</h3>
+
+  <table>
+    <thead>
+      <tr><th>Shape</th><th>Use case</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Unary RPC</td><td>Single request, single response — case creation, case lookup</td></tr>
+      <tr><td>Server streaming</td><td>Server sends a stream — case history retrieval, audit log streaming</td></tr>
+      <tr><td>Client streaming</td><td>Client sends a stream — bulk evidence upload</td></tr>
+      <tr><td>Bidirectional streaming</td><td>Both sides stream — live analyst collaboration</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Reliability and observability</h3>
+  <p>
+    gRPC deadlines bound the maximum latency of any downstream call. Interceptors handle cross-cutting concerns — logging, authentication, tracing — without modifying business logic. Metadata propagates identity and correlation context across service boundaries.
+  </p>
+
+  <h3>When Kafka, not gRPC</h3>
+  <p>
+    The notification service consumes Kafka events rather than receiving gRPC calls because notification delivery must be decoupled from the user-facing request. If the notification service is slow or unavailable, the investigation workflow should not be blocked. Kafka provides durable buffering and independent consumer progress, which gRPC does not.
+  </p>
+
+  <h3>Protobuf evolution</h3>
+  <p>
+    The documentation covers backward-compatible protobuf schema evolution: adding optional fields, reserving removed field numbers, and handling field renaming across service versions. This is a practical concern in systems where services deploy independently.
+  </p>
+
+  <h2>Documentation handbook</h2>
+  <p>
+    The repository includes a structured documentation sequence covering: why gRPC, Protocol Buffers, unary RPC through bidirectional streaming, metadata, interceptors, deadlines, authentication, versioning, Kafka vs gRPC vs REST comparison, performance considerations and interview preparation.
+  </p>
+
+  <h2>What is not yet implemented</h2>
+  <ul>
+    <li>Bidirectional streaming and live collaboration paths</li>
+    <li>Kafka integration (notification service event consumption)</li>
+    <li>Customer, history and collaboration service implementations beyond stubs</li>
+    <li>Load testing and performance characterization</li>
+  </ul>
+
+</CaseStudyLayout>

@@ -1,0 +1,122 @@
+---
+import CaseStudyLayout from '../../layouts/CaseStudyLayout.astro';
+import { getProjectBySlug } from '../../data/projects';
+import MediSureArchitecture from '../../components/diagrams/MediSureArchitecture.astro';
+import MediSureSimulation from '../../components/simulations/MediSureSimulation.astro';
+
+const project = getProjectBySlug('medsureai')!;
+---
+
+<CaseStudyLayout project={project}>
+
+  <h2>Overview</h2>
+  <p>
+    MediSureAI is a healthcare and insurance decision-support platform that combines document retrieval, agentic orchestration and a self-reflective reasoning pipeline to produce grounded, citation-backed responses. It is not a clinical diagnosis system — it is an AI engineering reference demonstrating how retrieval-augmented generation can be made more reliable through multi-path reasoning, self-critique and confidence calibration.
+  </p>
+  <p>
+    The system was presented at SYNERGY 2026 (IC-SIIT), with a forthcoming publication in a Scopus-indexed journal through Taylor & Francis / CRC Press. Final indexing is pending; no DOI is available yet.
+  </p>
+
+  <h2>Problem</h2>
+  <p>
+    Basic RAG systems retrieve relevant chunks and pass them to an LLM, which produces a single answer with no self-evaluation. This approach is fragile: a single noisy retrieval result can mislead the generation, the model has no mechanism to detect when its own answer contradicts the source material, and there is no calibrated confidence signal.
+  </p>
+  <p>
+    Healthcare and insurance contexts amplify these risks. Incorrect drug information, misread policy clauses or contradictory billing guidance can cause direct harm. MediSureAI's Self-Reflective Language Model (SRLM) pipeline addresses this by generating multiple independent reasoning paths, critiquing each for validity and factual alignment, scoring them and synthesising the highest-quality answer with citations.
+  </p>
+
+  <h2>System architecture</h2>
+  <MediSureArchitecture />
+
+  <p>The system has two independent pipelines sharing a common Spring Boot API layer:</p>
+
+  <h3>Document ingestion pipeline</h3>
+  <p>
+    PDF and DOCX documents are uploaded through the API. Apache Tika extracts text; the content is chunked and published to RabbitMQ for asynchronous processing. Document text and chunks are stored in MongoDB; embeddings are generated using the local Ollama model and indexed in PostgreSQL pgvector with HNSW indexing using cosine similarity.
+  </p>
+  <p>
+    Asynchronous ingestion decouples upload acknowledgement from the potentially slow embedding generation step. Users receive a 202 Accepted response immediately; the document becomes retrievable once processing completes.
+  </p>
+
+  <h3>SRLM reasoning pipeline</h3>
+  <p>
+    When a user submits a query to <code>/api/srlm</code>, the system executes this sequence:
+  </p>
+  <ol>
+    <li>Hybrid retrieval: embedding-based semantic search (pgvector) combined with keyword search</li>
+    <li>Cross-encoder reranking to elevate the most relevant chunks</li>
+    <li>Generate N independent reasoning paths with controlled temperature for diversity</li>
+    <li>Self-reflection: validate each path for factual correctness, contradictions and alignment with retrieved context</li>
+    <li>Score each path on relevance, correctness and completeness</li>
+    <li>Synthesise the highest-scoring paths into a single grounded answer with citations and confidence</li>
+  </ol>
+
+  <h2>Pipeline execution explorer</h2>
+  <p>
+    The following client-side explorer uses synthetic traces to make the execution model inspectable. It does not call MediSureAI, expose private model reasoning or present clinical advice as fact.
+  </p>
+  <div class="my-8 not-prose">
+    <MediSureSimulation />
+  </div>
+
+  <h2>Data store roles</h2>
+
+  <table>
+    <thead>
+      <tr><th>Store</th><th>Role</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>PostgreSQL</td><td>Structured application data: users, doctors, patients, medical records, billing, receipts, refresh tokens</td></tr>
+      <tr><td>pgvector</td><td>Embedding vectors with HNSW indexing for cosine similarity search</td></tr>
+      <tr><td>MongoDB</td><td>Document text and chunks from uploaded PDFs and DOCX files</td></tr>
+      <tr><td>RabbitMQ</td><td>Asynchronous document ingestion queue — decouples upload from embedding generation</td></tr>
+      <tr><td>Ollama (local)</td><td>Fast local embeddings and foundation inference; private — no data leaves the deployment</td></tr>
+      <tr><td>Groq (cloud)</td><td>High-quality critique generation and drug formulary reasoning</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Security and reliability</h2>
+  <p>
+    The API uses JWT access tokens with refresh-token rotation. Three roles are defined: <code>PATIENT</code>, <code>DOCTOR</code> and <code>ADMIN</code>. Method-level RBAC is enforced via Spring Security's <code>@PreAuthorize</code>. Patients have access to their own records, chat and drug formulary. Doctors can manage profiles, look up patients and create medical records and billing. Admins manage the vector index.
+  </p>
+
+  <h2>Engineering decisions</h2>
+
+  <h3>Why asynchronous document ingestion via RabbitMQ?</h3>
+  <p>
+    Embedding generation is compute-intensive, especially for large documents. Blocking the HTTP request thread during embedding would create poor latency and backpressure on the API. RabbitMQ decouples the upload acknowledgement from the processing pipeline, letting the API respond immediately while the ingestion worker processes at its own pace.
+  </p>
+
+  <h3>Why hybrid retrieval?</h3>
+  <p>
+    Semantic (embedding-based) retrieval captures conceptual similarity but can miss exact terminology matches. Keyword retrieval (BM25-style) captures exact terms but misses paraphrases. Combining both improves recall across both types of queries, which is especially important for medical and insurance documents that mix technical terminology with natural language.
+  </p>
+
+  <h3>Why cross-encoder reranking?</h3>
+  <p>
+    Bi-encoder retrieval (embedding similarity) is fast but coarse — it scores chunks independently of the query. Cross-encoders score (query, chunk) pairs jointly and are more accurate at identifying the most relevant chunks. Running reranking on the retrieval candidate set rather than the full corpus keeps latency manageable.
+  </p>
+
+  <h3>Why multi-path reasoning and self-reflection?</h3>
+  <p>
+    A single LLM generation is a point estimate — there is no internal signal about whether the answer is reliable. Generating multiple paths at varied temperatures produces diverse candidates. Self-reflection then applies explicit checks: does each path contradict the source? Are factual claims grounded in the retrieved context? The scoring step selects the most reliable path rather than accepting the first generation.
+  </p>
+
+  <h3>Why split Ollama and Groq?</h3>
+  <p>
+    Ollama runs locally, keeping embedding generation and foundation inference private with predictable cost. Groq provides high-quality cloud inference for tasks where model quality matters most — critique generation during self-reflection and drug formulary reasoning — without requiring a large local model for every workload.
+  </p>
+
+  {false && <>
+  <h2>Important limitations</h2>
+  <p>
+    MediSureAI is not a clinically validated medical diagnosis system. Its responses are decision-support material and must not replace professional medical judgment. Local Ollama inference requires sufficient hardware. The Groq dependency introduces a cloud call for specific workloads. Confidence calibration is heuristic — it reflects internal scoring, not empirically measured accuracy.
+  </p>
+  </>}
+
+  <h2>Research context</h2>
+  <p>
+    The project was presented at SYNERGY 2026 (IC-SIIT). A forthcoming publication is described in Scopus-indexed proceedings through Taylor &amp; Francis / CRC Press. Final indexing is pending.
+  </p>
+
+</CaseStudyLayout>

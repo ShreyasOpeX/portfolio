@@ -1,0 +1,140 @@
+---
+import '../styles/global.css';
+import Nav from '../components/layout/Nav.astro';
+import Footer from '../components/layout/Footer.astro';
+import PageBackground from '../components/infrastructure/PageBackground.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+}
+
+const {
+  title,
+  description = "Shreyas — Backend-focused software engineer specialising in distributed systems, event-driven architecture and applied AI.",
+  ogImage = '/og-image.png',
+  canonicalUrl,
+} = Astro.props;
+
+const siteUrl = 'https://shreyas.dev';
+const canonical = canonicalUrl ?? `${siteUrl}${Astro.url.pathname}`;
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Primary Meta -->
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="Shreyas" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={`${siteUrl}${ogImage}`} />
+    <meta property="og:site_name" content="shreyas.dev" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={`${siteUrl}${ogImage}`} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Fonts preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Shreyas",
+        "jobTitle": "Software Engineer",
+        "description": "Backend-focused software engineer specialising in distributed systems, event-driven architecture and applied AI.",
+        "url": "https://shreyas.dev",
+        "sameAs": [
+          "https://github.com/ShreyasOpeX",
+          "https://linkedin.com/in/shreyas-548b9a282"
+        ],
+        "knowsAbout": ["Distributed Systems", "Apache Kafka", "gRPC", "Java", "Spring Boot", "AI Engineering"]
+      }
+    </script>
+
+    <!-- Theme init — prevents flash -->
+    <script is:inline>
+      (function () {
+        const stored = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored ?? (prefersDark ? 'dark' : 'light');
+        document.documentElement.classList.toggle('light', theme === 'light');
+        document.documentElement.classList.toggle('dark', theme !== 'light');
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <PageBackground />
+    <Nav />
+    <main id="main-content" class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+
+    <!-- Theme toggle script -->
+    <script is:inline>
+      window.__toggleTheme = function () {
+        const isLight = document.documentElement.classList.contains('light');
+        const next = isLight ? 'dark' : 'light';
+        document.documentElement.classList.toggle('light', next === 'light');
+        document.documentElement.classList.toggle('dark', next !== 'light');
+        localStorage.setItem('theme', next);
+        // Update icon states
+        document.querySelectorAll('[data-theme-icon]').forEach(el => {
+          el.setAttribute('data-theme', next);
+        });
+      };
+    </script>
+
+    <!-- Section reveal on scroll -->
+    <script is:inline>
+      (function() {
+        if (!window.IntersectionObserver) return;
+        var observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.08 });
+        document.querySelectorAll('.reveal').forEach(function(el) {
+          observer.observe(el);
+        });
+      })();
+    </script>
+
+    <script is:inline>
+      (function() {
+        if (window.matchMedia('(pointer: fine)').matches) {
+          window.addEventListener('pointermove', function(event) {
+            document.documentElement.style.setProperty('--pointer-x', event.clientX + 'px');
+            document.documentElement.style.setProperty('--pointer-y', event.clientY + 'px');
+          }, { passive: true });
+        }
+      })();
+    </script>
+  </body>
+</html>

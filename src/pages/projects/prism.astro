@@ -1,0 +1,58 @@
+---
+import CaseStudyLayout from '../../layouts/CaseStudyLayout.astro';
+import { getProjectBySlug } from '../../data/projects';
+
+const project = getProjectBySlug('prism')!;
+---
+
+<CaseStudyLayout project={project}>
+
+  <h2>Overview</h2>
+  <p>
+    PRISM (Policy Retrieval &amp; Intelligence System Manager) is an AI-powered document intelligence platform built with Python and FastAPI. It combines a custom ReAct (Reason + Act) agent with multiple retrieval engines to answer complex policy queries with explainable, multi-source reasoning.
+  </p>
+  <p>
+    The repository is marked proprietary and confidential. This case study covers high-level architectural concepts only. Internal source code, configuration, documents and detailed implementation specifics are not disclosed.
+  </p>
+
+  <h2>Architecture (high level)</h2>
+  <p>
+    The system is structured around a central ReAct agent that selects among three retrieval tools based on query intent:
+  </p>
+  <ul>
+    <li><strong>SRLM engine</strong> — deep semantic search using ChromaDB with cross-encoder reranking</li>
+    <li><strong>Policy RAG</strong> — high-precision policy retrieval using FAISS vector search and BM25 keyword matching</li>
+    <li><strong>Web search</strong> — real-time external context via DuckDuckGo</li>
+  </ul>
+  <p>
+    The agent reasons through the query, selects tools, synthesises results from multiple sources and produces a cited answer. Document metadata and conversation history persist through AWS S3 synchronization.
+  </p>
+
+  <h2>Key engineering aspects</h2>
+
+  <h3>Hybrid retrieval orchestration</h3>
+  <p>
+    Policy documents often contain exact terminology that semantic search alone may miss. Combining ChromaDB's semantic retrieval with FAISS vector search and BM25 keyword matching across two distinct retrieval engines improves coverage. The agent selects the appropriate engine based on query characteristics.
+  </p>
+
+  <h3>ReAct agent design</h3>
+  <p>
+    The custom ReAct agent follows a Reason → Act → Observe cycle. It reasons about which tool to invoke, executes it, observes the result and iterates until it has sufficient information to synthesise an answer. The reasoning trace is exposed to users as a visual timeline, making the agent's decision process transparent.
+  </p>
+
+  <h3>Persistence design</h3>
+  <p>
+    Document storage uses an in-memory MongoDB implementation with AWS S3 as the persistent backing store. S3 synchronization is handled by a dedicated sync manager, decoupling the API's read path from cloud latency while maintaining durable persistence.
+  </p>
+
+  <h3>LLM layer</h3>
+  <p>
+    The system supports both Groq cloud inference (Llama 3.3 70B) for high-quality responses and local model integrations for cost or privacy requirements, managed through a unified LLM factory.
+  </p>
+
+  <h2>Note on repository access</h2>
+  <p>
+    The PRISM repository is proprietary. Source code, detailed implementation, configuration and internal documents are not publicly accessible. The repository link is not enabled in this portfolio pending explicit approval.
+  </p>
+
+</CaseStudyLayout>

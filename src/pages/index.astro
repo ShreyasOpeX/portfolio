@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/sections/Hero.astro';
+import Experience from '../components/sections/Experience.astro';
+import SelectedProjects from '../components/sections/SelectedProjects.astro';
+import EngineeringPrinciples from '../components/sections/EngineeringPrinciples.astro';
+import Skills from '../components/sections/Skills.astro';
+import Achievements from '../components/sections/Achievements.astro';
+import Contact from '../components/sections/Contact.astro';
+---
+
+<BaseLayout
+  title="Shreyas — Backend & Distributed Systems Engineer"
+  description="Backend-focused software engineer based in Bengaluru, working with Java, Spring Boot, Apache Kafka, gRPC and applied AI. Building reliable distributed systems and exploring event-driven architectures."
+>
+  <!-- Page content — sits above the fixed background -->
+  <div class="homepage-content" style="position: relative; z-index: 1;">
+    <Hero />
+    <Experience />
+    <SelectedProjects />
+    <EngineeringPrinciples />
+    <Skills />
+    <Achievements />
+    <Contact />
+  </div>
+</BaseLayout>

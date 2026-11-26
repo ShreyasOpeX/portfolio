@@ -1,0 +1,246 @@
+---
+// TradeSentry illustrative transaction lifecycle simulation
+// All data is synthetic. No connection to any deployed backend.
+---
+
+<div class="rounded-xl overflow-hidden" style="background: var(--bg-surface); border: 1px solid var(--border);" id="ts-sim">
+  
+  <!-- Header -->
+  <div class="px-5 py-4 flex items-center justify-between gap-4" style="border-bottom: 1px solid var(--border); background: var(--bg-elevated);">
+    <div>
+      <p class="font-mono text-xs mb-1" style="color: var(--accent);">ILLUSTRATIVE SIMULATION</p>
+      <h3 class="text-sm font-semibold" style="color: var(--text-primary);">Transaction Lifecycle Explorer</h3>
+    </div>
+    <span class="font-mono text-xs px-2 py-1 rounded" style="background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted);">synthetic data only</span>
+  </div>
+
+  <!-- Scenario selector -->
+  <div class="px-5 pt-4 pb-3 flex flex-wrap gap-2" role="group" aria-label="Select transaction scenario">
+    <button type="button" class="scenario-btn font-mono text-xs px-3 py-1.5 rounded transition-colors duration-150" data-scenario="normal" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer;" aria-pressed="false">Normal transaction</button>
+    <button type="button" class="scenario-btn font-mono text-xs px-3 py-1.5 rounded transition-colors duration-150" data-scenario="flagged" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer;" aria-pressed="false">Flagged transaction</button>
+    <button type="button" class="scenario-btn font-mono text-xs px-3 py-1.5 rounded transition-colors duration-150" data-scenario="duplicate" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer;" aria-pressed="false">Duplicate event</button>
+    <button type="button" class="scenario-btn font-mono text-xs px-3 py-1.5 rounded transition-colors duration-150" data-scenario="failure" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer;" aria-pressed="false">Dependency failure</button>
+  </div>
+
+  <!-- Main layout: steps + trace -->
+  <div class="p-5 grid md:grid-cols-2 gap-6">
+
+    <!-- Step-through controls -->
+    <div>
+      <p class="font-mono text-xs mb-3" style="color: var(--text-muted);">// execution trace</p>
+      <div id="ts-trace" aria-live="polite" aria-label="Transaction execution trace" class="space-y-0 mb-4 rounded-lg overflow-hidden" style="border: 1px solid var(--border); background: var(--bg-elevated);">
+        <!-- Steps injected by JS -->
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="ts-prev" type="button" class="font-mono text-xs px-3 py-1.5 rounded transition-colors duration-150" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary);" aria-label="Previous step">← prev</button>
+        <button id="ts-next" type="button" class="font-mono text-xs px-3 py-1.5 rounded transition-colors duration-150" style="background: var(--accent); color: #090C10; font-weight: 600;" aria-label="Next step">next →</button>
+        <button id="ts-reset" type="button" class="font-mono text-xs px-3 py-1.5 rounded transition-colors duration-150 ml-auto" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted);" aria-label="Reset simulation">reset</button>
+      </div>
+    </div>
+
+    <!-- Event payload viewer -->
+    <div>
+      <p class="font-mono text-xs mb-3" style="color: var(--text-muted);">// sample event payload</p>
+      <div class="relative code-block-wrapper rounded-lg" style="background: var(--bg-elevated); border: 1px solid var(--border);">
+        <pre id="ts-payload" class="p-4 text-xs overflow-x-auto" style="font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); margin: 0; min-height: 160px;"></pre>
+        <button class="copy-btn" type="button" id="ts-copy-payload" aria-label="Copy event payload">copy</button>
+      </div>
+      <p id="ts-step-desc" class="text-xs mt-3 leading-relaxed" style="color: var(--text-muted); min-height: 2.5rem;"></p>
+    </div>
+
+  </div>
+</div>
+
+<script is:inline>
+(function() {
+  var SCENARIOS = {
+    normal: {
+      steps: [
+        { id:'01', label:'Transaction received', color:'sync', topic:null,
+          desc:'Client submits POST /api/transactions. API applies auth, rate limiting and assigns correlation ID.',
+          payload: JSON.stringify({ event:'TransactionReceived', correlationId:'corr-7f3a9b', transactionId:'tx-00142', accountId:'acc-1891', amount:12500, currency:'USD', counterpartyCountry:'DE' }, null, 2) },
+        { id:'02', label:'Atomic DB + outbox commit', color:'storage', topic:null,
+          desc:'TransactionService writes transaction and outbox_events row in one PostgreSQL transaction. If DB rolls back, no Kafka intent exists.',
+          payload: JSON.stringify({ outboxId:'ob-00142', kafkaTopic:'transactions.ingested', kafkaKey:'acc-1891', status:'PENDING', createdAt:'2026-01-15T10:22:03Z' }, null, 2) },
+        { id:'03', label:'Outbox relay publishes', color:'async', topic:'transactions.ingested',
+          desc:'Scheduled relay queries pending outbox rows using FOR UPDATE SKIP LOCKED, publishes to Kafka and marks PUBLISHED.',
+          payload: JSON.stringify({ topic:'transactions.ingested', key:'acc-1891', event:'TransactionIngested', transactionId:'tx-00142', accountId:'acc-1891', amount:12500, currency:'USD', ruleVersion:'rules-v1', correlationId:'corr-7f3a9b' }, null, 2) },
+        { id:'04', label:'Screening consumer', color:'async', topic:'transactions.ingested',
+          desc:'rule-screen group claims eventId in inbox. Deterministic rules evaluate: amount, counterparty country, structuring patterns. No flags match.',
+          payload: JSON.stringify({ screeningResult:'CLEARED_EARLY', transactionId:'tx-00142', reason:'No AML rule matched', ruleVersion:'rules-v1', processedAt:'2026-01-15T10:22:04Z' }, null, 2) },
+        { id:'05', label:'Transaction cleared', color:'ok', topic:null,
+          desc:'Transaction marked CLEARED_EARLY. No further processing required. Audit consumer independently persists the ingested event.',
+          payload: JSON.stringify({ outcome:'CLEARED_EARLY', transactionId:'tx-00142', auditRecordId:'aud-00142-01', finalAt:'2026-01-15T10:22:04Z' }, null, 2) },
+      ]
+    },
+    flagged: {
+      steps: [
+        { id:'01', label:'Transaction received', color:'sync', topic:null,
+          desc:'Client submits a high-value transaction to a high-risk counterparty country.',
+          payload: JSON.stringify({ event:'TransactionReceived', correlationId:'corr-9d1f4c', transactionId:'tx-00891', accountId:'acc-0042', amount:74500, currency:'USD', counterpartyCountry:'KP' }, null, 2) },
+        { id:'02', label:'Atomic DB + outbox commit', color:'storage', topic:null,
+          desc:'Transaction and outbox_events row committed atomically in PostgreSQL.',
+          payload: JSON.stringify({ outboxId:'ob-00891', kafkaTopic:'transactions.ingested', kafkaKey:'acc-0042', status:'PENDING' }, null, 2) },
+        { id:'03', label:'Outbox relay publishes', color:'async', topic:'transactions.ingested',
+          desc:'Relay publishes to transactions.ingested.',
+          payload: JSON.stringify({ topic:'transactions.ingested', key:'acc-0042', event:'TransactionIngested', transactionId:'tx-00891', accountId:'acc-0042', amount:74500, currency:'USD', counterpartyCountry:'KP', correlationId:'corr-9d1f4c' }, null, 2) },
+        { id:'04', label:'Screening flags transaction', color:'warning', topic:'transactions.flagged',
+          desc:'Screening rule matches: HIGH_RISK_COUNTRY + LARGE_AMOUNT. Publishes transactions.flagged via outbox.',
+          payload: JSON.stringify({ topic:'transactions.flagged', key:'acc-0042', event:'TransactionFlagged', transactionId:'tx-00891', flagReasons:['HIGH_RISK_COUNTRY','LARGE_AMOUNT'], ruleVersion:'rules-v1', correlationId:'corr-9d1f4c' }, null, 2) },
+        { id:'05', label:'Investigation agent claims event', color:'async', topic:null,
+          desc:'agent-service consumer claims eventId in inbox atomically. Duplicate deliveries will conflict and produce a no-op.',
+          payload: JSON.stringify({ inbox:'investigation_inbox', eventId:'ev-flagged-00891', consumerName:'investigation-agent', claimedAt:'2026-01-15T10:24:01Z' }, null, 2) },
+        { id:'06', label:'Enrich — gRPC GetAccountHistory', color:'sync', topic:null,
+          desc:'StateGraph calls case-data-service.GetAccountHistory() over unary gRPC. Returns account risk band, prior flags, SAR history.',
+          payload: JSON.stringify({ rpc:'GetAccountHistory', accountId:'acc-0042', txCount:12, avgAmount:8200, maxAmount:74500, priorFlags:2, priorSAR:false, riskBand:'HIGH' }, null, 2) },
+        { id:'07', label:'Retrieve similar cases — gRPC streaming', color:'sync', topic:null,
+          desc:'StateGraph calls RetrieveSimilarCases() with server streaming. Returns 2 similar cases both adjudicated FLAG.',
+          payload: JSON.stringify({ rpc:'RetrieveSimilarCases', accountId:'acc-0042', similarCases:[{caseId:'cs-0712',outcome:'FLAG',riskScore:0.61},{caseId:'cs-0589',outcome:'FLAG',riskScore:0.58}] }, null, 2) },
+        { id:'08', label:'Risk assessment', color:'warning', topic:null,
+          desc:'DeterministicRiskScorer combines signals: HIGH_RISK_COUNTRY + LARGE_AMOUNT + HIGH risk band + 2 prior flags + similar case outcomes. Score: 0.72.',
+          payload: JSON.stringify({ scorer:'DeterministicRiskScorer', riskScore:0.72, signals:['HIGH_RISK_COUNTRY','LARGE_AMOUNT','RISK_BAND_HIGH','PRIOR_FLAGS_2','SIMILAR_CASE_FLAG'], investigationDepth:1, scoringVersion:'scorer-v1' }, null, 2) },
+        { id:'09', label:'Decision: ESCALATE', color:'error', topic:'transactions.adjudicated',
+          desc:'ThresholdDecisionPolicy: score >= 0.70 -> ESCALATE. Adjudication event published to transactions.adjudicated.',
+          payload: JSON.stringify({ topic:'transactions.adjudicated', event:'TransactionAdjudicated', transactionId:'tx-00891', accountId:'acc-0042', decision:'ESCALATE', riskScore:0.72, rationale:'High-risk counterparty (KP), large amount $74,500, HIGH risk band, 2 prior flags. SAR workflow opened.', correlationId:'corr-9d1f4c' }, null, 2) },
+        { id:'10', label:'Case management + audit', color:'storage', topic:null,
+          desc:'case-mgmt group persists investigation_cases + sar_cases. Independent audit group writes audit_records. Both consume from transactions.adjudicated.',
+          payload: JSON.stringify({ investigationCase:'ic-00891', sarCase:'sar-00891', auditRecord:'aud-00891-adj', decisionPolicyVersion:'policy-v1', finalAt:'2026-01-15T10:24:08Z' }, null, 2) },
+      ]
+    },
+    duplicate: {
+      steps: [
+        { id:'01', label:'Event published (delivery #1)', color:'async', topic:'transactions.flagged',
+          desc:'Outbox relay publishes event. Consumer processes it and claims inbox.',
+          payload: JSON.stringify({ delivery:1, eventId:'ev-flagged-00400', topic:'transactions.flagged', transactionId:'tx-00400' }, null, 2) },
+        { id:'02', label:'Inbox claim succeeds', color:'ok', topic:null,
+          desc:'INSERT INTO investigation_inbox(eventId, consumerName) succeeds. Business side effect executes.',
+          payload: JSON.stringify({ inbox:'investigation_inbox', eventId:'ev-flagged-00400', consumerName:'investigation-agent', result:'CLAIMED', processedAt:'2026-01-15T11:05:00Z' }, null, 2) },
+        { id:'03', label:'Event redelivered (delivery #2)', color:'warning', topic:'transactions.flagged',
+          desc:'Kafka redelivers the same event (relay crashed between Kafka ack and DB update). Consumer receives it again.',
+          payload: JSON.stringify({ delivery:2, eventId:'ev-flagged-00400', topic:'transactions.flagged', transactionId:'tx-00400', note:'duplicate delivery' }, null, 2) },
+        { id:'04', label:'Inbox conflict — no-op', color:'ok', topic:null,
+          desc:'INSERT conflicts on (eventId, consumerName) unique key. PostgreSQL returns conflict. Consumer returns without executing business logic.',
+          payload: JSON.stringify({ inbox:'investigation_inbox', eventId:'ev-flagged-00400', consumerName:'investigation-agent', result:'CONFLICT_NO_OP', reason:'already processed', skippedAt:'2026-01-15T11:05:03Z' }, null, 2) },
+        { id:'05', label:'Idempotency guaranteed', color:'ok', topic:null,
+          desc:'Transaction is processed exactly once despite multiple Kafka deliveries. At-least-once delivery + idempotent side effects = safe processing.',
+          payload: JSON.stringify({ outcome:'IDEMPOTENT_SAFE', deliveriesReceived:2, businessEffectsApplied:1, model:'at-least-once + idempotent inbox' }, null, 2) },
+      ]
+    },
+    failure: {
+      steps: [
+        { id:'01', label:'Investigation starts', color:'async', topic:'transactions.flagged',
+          desc:'Agent claims flagged event from inbox and starts StateGraph.',
+          payload: JSON.stringify({ event:'InvestigationStarted', eventId:'ev-flagged-00901', transactionId:'tx-00901', accountId:'acc-7721' }, null, 2) },
+        { id:'02', label:'gRPC call — deadline set', color:'sync', topic:null,
+          desc:'StateGraph calls case-data-service.GetAccountHistory() with a configured deadline (e.g. 2 seconds).',
+          payload: JSON.stringify({ rpc:'GetAccountHistory', accountId:'acc-7721', deadline:'2000ms', sentAt:'2026-01-15T14:30:00Z' }, null, 2) },
+        { id:'03', label:'gRPC deadline exceeded', color:'error', topic:null,
+          desc:'case-data-service does not respond within the deadline. gRPC returns DEADLINE_EXCEEDED status.',
+          payload: JSON.stringify({ rpcStatus:'DEADLINE_EXCEEDED', rpc:'GetAccountHistory', elapsedMs:2001, error:'context deadline exceeded' }, null, 2) },
+        { id:'04', label:'Kafka listener failure', color:'error', topic:null,
+          desc:'gRPC failure propagates as a listener exception. Kafka error handler initiates bounded retry with backoff.',
+          payload: JSON.stringify({ listenerError:'gRPC DEADLINE_EXCEEDED', retryAttempt:1, backoffMs:1000 }, null, 2) },
+        { id:'05', label:'Retries exhausted -> DLQ', color:'error', topic:'transactions.dlq',
+          desc:'After configured retry limit, record is published to transactions.dlq for operational review and controlled replay.',
+          payload: JSON.stringify({ topic:'transactions.dlq', eventId:'ev-flagged-00901', transactionId:'tx-00901', cause:'gRPC DEADLINE_EXCEEDED after 3 retries', dlqAt:'2026-01-15T14:30:08Z', action:'requires_manual_replay' }, null, 2) },
+      ]
+    },
+  };
+
+  var COLORS = {
+    sync:    '#60A5FA',
+    async:   '#34D399',
+    storage: '#A78BFA',
+    warning: '#FBBF24',
+    error:   '#F87171',
+    ok:      '#34D399',
+  };
+
+  var currentScenario = 'normal';
+  var currentStep = -1;
+
+  function getSteps() { return SCENARIOS[currentScenario].steps; }
+
+  function renderTrace() {
+    var steps = getSteps();
+    var trace = document.getElementById('ts-trace');
+    if (!trace) return;
+    trace.innerHTML = steps.map(function(s, i) {
+      var active = i <= currentStep;
+      var isCurrent = i === currentStep;
+      var color = active ? (COLORS[s.color] || '#34D399') : 'var(--text-muted)';
+      return '<div style="padding:8px 12px; display:flex; gap:12px; align-items:flex-start; border-bottom:1px solid var(--border-subtle,#1A2330); font-family:JetBrains Mono,monospace; font-size:0.7rem; color:' + (active ? 'var(--text-secondary)' : 'var(--text-muted)') + '; background:' + (isCurrent ? 'var(--bg-surface)' : 'transparent') + ';">'
+        + '<span style="color:' + (active ? 'var(--text-muted)' : 'var(--text-secondary)') + '; min-width:2rem;">[' + s.id + ']</span>'
+        + '<span>' + s.label + (s.topic ? ' <span style="color:' + color + '">&#8599; ' + s.topic + '</span>' : '') + '</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  function renderPayload() {
+    var steps = getSteps();
+    var payloadEl = document.getElementById('ts-payload');
+    var descEl = document.getElementById('ts-step-desc');
+    if (currentStep < 0 || currentStep >= steps.length) {
+      if (payloadEl) payloadEl.textContent = '// Select a scenario and press next \u2192';
+      if (descEl) descEl.textContent = '';
+      return;
+    }
+    var s = steps[currentStep];
+    if (payloadEl) payloadEl.textContent = s.payload;
+    if (descEl) descEl.textContent = s.desc;
+  }
+
+  function updateButtons() {
+    var steps = getSteps();
+    var prev = document.getElementById('ts-prev');
+    var next = document.getElementById('ts-next');
+    if (prev) prev.disabled = currentStep <= 0;
+    if (next) next.disabled = currentStep >= steps.length - 1;
+  }
+
+  function init(scenario) {
+    currentScenario = scenario;
+    currentStep = -1;
+    renderTrace();
+    renderPayload();
+    updateButtons();
+    document.querySelectorAll('#ts-sim .scenario-btn').forEach(function(btn) {
+      var active = btn.getAttribute('data-scenario') === scenario;
+      btn.setAttribute('aria-pressed', String(active));
+      btn.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+      btn.style.color = active ? 'var(--accent)' : 'var(--text-secondary)';
+      btn.style.background = active ? 'var(--bg-surface)' : 'var(--bg-elevated)';
+    });
+  }
+
+  document.querySelectorAll('#ts-sim .scenario-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { init(btn.getAttribute('data-scenario')); });
+  });
+
+  document.getElementById('ts-next').addEventListener('click', function() {
+    if (currentStep < getSteps().length - 1) { currentStep++; renderTrace(); renderPayload(); updateButtons(); }
+  });
+  document.getElementById('ts-prev').addEventListener('click', function() {
+    if (currentStep > 0) { currentStep--; renderTrace(); renderPayload(); updateButtons(); }
+  });
+  document.getElementById('ts-reset').addEventListener('click', function() { init(currentScenario); });
+
+  document.getElementById('ts-copy-payload').addEventListener('click', function() {
+    var payloadEl = document.getElementById('ts-payload');
+    if (payloadEl && navigator.clipboard) {
+      navigator.clipboard.writeText(payloadEl.textContent || '').then(function() {
+        var btn = document.getElementById('ts-copy-payload');
+        if (btn) { btn.textContent = 'copied!'; setTimeout(function() { btn.textContent = 'copy'; }, 1800); }
+      });
+    }
+  });
+
+  // keyboard: left/right arrow
+  document.getElementById('ts-sim').addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { document.getElementById('ts-next').click(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { document.getElementById('ts-prev').click(); }
+  });
+
+  init('normal');
+})();
+</script>

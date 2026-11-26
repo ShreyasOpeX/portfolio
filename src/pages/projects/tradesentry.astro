@@ -1,0 +1,173 @@
+---
+import CaseStudyLayout from '../../layouts/CaseStudyLayout.astro';
+import { getProjectBySlug } from '../../data/projects';
+import TradeSentryDiagram from '../../components/diagrams/TradeSentryDiagram.astro';
+import TradeSentrySimulation from '../../components/simulations/TradeSentrySimulation.astro';
+
+const project = getProjectBySlug('tradesentry')!;
+---
+
+<CaseStudyLayout project={project}>
+
+  <h2>Overview</h2>
+  <p>
+    TradeSentry is an event-driven Anti-Money-Laundering (AML) transaction monitoring reference platform. It demonstrates how a production-grade financial data pipeline can be built using Java 21, Spring Boot, Apache Kafka and gRPC — with explicit attention to reliability, auditability and separation of concerns.
+  </p>
+  <p>
+    The platform ingests transactions over a REST API, screens them deterministically against AML rules, and routes suspicious transactions to an autonomous investigation agent. The agent enriches each case with account history and similar prior cases (fetched over gRPC), scores the risk using a strategy-based scorer, and records a final adjudication decision. Every stage communicates asynchronously through Kafka.
+  </p>
+
+  <h2>Problem</h2>
+  <p>
+    Anti-money-laundering pipelines share a core challenge with many financial data systems: they must process a stream of events reliably, enforce ordering guarantees on a per-entity basis, produce durable audit records and investigate suspicious cases without blocking the ingestion pipeline. The system must handle failures at any stage — Kafka delivery failures, service crashes, gRPC timeouts — without losing events or producing duplicate side effects.
+  </p>
+  <p>
+    A naive synchronous design would create tight coupling between intake, screening and investigation, making each stage dependent on the availability and latency of every downstream component. TradeSentry uses Kafka to decouple these stages and gRPC specifically where synchronous, typed request/response behavior is required inside the investigation workflow.
+  </p>
+
+  <h2>System architecture</h2>
+  <TradeSentryDiagram />
+
+  <p>The system is composed of three services and a shared proto module:</p>
+  <ul>
+    <li><strong>core-service</strong> — REST intake, rule-based screening, outbox relay, case management, audit</li>
+    <li><strong>agent-service</strong> — bounded Java StateGraph investigation workflow</li>
+    <li><strong>case-data-service</strong> — gRPC provider of account history and similar cases</li>
+    <li><strong>proto</strong> — shared Protocol Buffers definitions and generated stubs</li>
+  </ul>
+
+  <h2>End-to-end transaction lifecycle</h2>
+
+  <div class="my-8 not-prose">
+    <TradeSentrySimulation />
+  </div>
+
+  <h3>1. API admission</h3>
+  <p>
+    The client submits a transaction through <code>POST /api/transactions</code>. The API boundary applies authentication, role-based authorization (<code>AML_OPERATOR</code>, <code>AML_ANALYST</code>), correlation-ID creation and bounded rate limiting. When the rate limit is exceeded the API returns HTTP 429 with <code>Retry-After</code>.
+  </p>
+
+  <h3>2. Atomic transaction + outbox commit</h3>
+  <p>
+    <code>TransactionService</code> creates the business transaction and the corresponding <code>outbox_events</code> row in a single PostgreSQL transaction. If the database rolls back, neither the business record nor the Kafka publication intent exists. If the database commits while Kafka is unavailable, the outbox row remains durable and pending — the classic database-to-broker reliability guarantee.
+  </p>
+
+  <h3>3. Outbox relay</h3>
+  <p>
+    A scheduled relay queries pending outbox rows using <code>FOR UPDATE SKIP LOCKED</code>, so multiple relay instances divide work without contention. Rows are marked <code>PUBLISHED</code> only after Kafka acknowledges the send. The relay is intentionally at-least-once: a crash between Kafka acknowledgement and database update can produce a duplicate, which is why consumer idempotency is required downstream.
+  </p>
+
+  <h3>4. Kafka topology</h3>
+
+  <table>
+    <thead>
+      <tr><th>Topic</th><th>Key</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>transactions.ingested</code></td><td>accountId</td><td>Accepted transaction for screening and audit</td></tr>
+      <tr><td><code>transactions.flagged</code></td><td>accountId</td><td>Suspicious transaction for investigation and audit</td></tr>
+      <tr><td><code>transactions.adjudicated</code></td><td>accountId</td><td>Final disposition for case management and audit</td></tr>
+      <tr><td><code>transactions.dlq</code></td><td>partition-based</td><td>Failed records after bounded retries</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    <code>accountId</code> is the Kafka key so all transactions for one account are ordered within a partition. Different accounts process concurrently. This is a deliberate trade-off: per-account ordering at the cost of potential hot partitions for high-velocity accounts.
+  </p>
+
+  <h3>5. Deterministic screening</h3>
+  <p>
+    The <code>rule-screen</code> consumer receives <code>transactions.ingested</code>. Before processing, it atomically claims <code>eventId + consumerName</code> in a PostgreSQL inbox. A Kafka redelivery becomes a no-op. The current screening rules are project-specific illustrative rules, not universal regulatory thresholds.
+  </p>
+
+  <h3>6. Investigation workflow (StateGraph)</h3>
+  <p>
+    The investigation agent consumes <code>transactions.flagged</code> and runs a bounded Java StateGraph:
+  </p>
+
+  <pre><code>start → enrich → retrieveCases → assess
+           ↑                          |
+           |     borderline?          | not borderline
+           +── investigateDeeper ◄────+
+                                      ↓
+                                   decide → END</code></pre>
+
+  <p>
+    The <strong>enrich</strong> node calls <code>case-data-service.GetAccountHistory</code> over unary gRPC. The <strong>retrieveCases</strong> node calls <code>RetrieveSimilarCases</code> using gRPC server streaming. The <strong>assess</strong> node delegates to <code>DeterministicRiskScorer</code>, which combines signals including structuring indicators, counterparty country, account risk band, prior SAR history and investigation depth. The <strong>decide</strong> node applies <code>ThresholdDecisionPolicy</code>: scores below 0.40 → CLEAR, 0.40–0.70 → FLAG, ≥ 0.70 → ESCALATE.
+  </p>
+  <p>
+    Two independent guards bound execution: a business investigation-depth limit prevents unbounded deeper investigation; a <code>maxSteps</code> guard prevents infinite graph cycles. These are different safeguards for different failure modes.
+  </p>
+
+  <h2>Engineering decisions</h2>
+
+  <h3>Why Kafka instead of synchronous REST for the pipeline?</h3>
+  <p>
+    Kafka provides durable buffering, independent consumer progress and replay capability. Screening and investigation can lag or restart without affecting intake. Synchronous REST chains would create cascading availability dependencies — if investigation is slow, intake would block.
+  </p>
+
+  <h3>Why gRPC for case-data reads inside investigation?</h3>
+  <p>
+    The StateGraph needs immediate, typed answers to choose its next transition. Kafka is not appropriate for synchronous request/response. gRPC provides low-latency typed calls, server streaming for similar-case retrieval and explicit deadlines that prevent a slow case-data service from blocking the Kafka consumer indefinitely.
+  </p>
+
+  <h3>Why is the transactional outbox necessary?</h3>
+  <p>
+    Without the outbox, a commit to PostgreSQL followed by a Kafka publish has a failure window: if the process crashes after the database commit but before the Kafka send, the event is lost silently. The outbox eliminates this window by making the Kafka publication intent durable in the same database transaction as the business data.
+  </p>
+
+  <h3>How are duplicate events handled?</h3>
+  <p>
+    Each side-effecting consumer maintains a PostgreSQL inbox keyed on <code>(eventId, consumerName)</code>. Claiming the inbox is atomic. A Kafka redelivery produces a conflict on insert, which is treated as a no-op. The system deliberately uses at-least-once delivery with idempotent side effects rather than claiming global exactly-once semantics.
+  </p>
+
+  <h3>Why does per-account ordering matter?</h3>
+  <p>
+    AML investigation context depends on account history. If transaction B from account X is screened before transaction A — which arrived first — the history seen during B's investigation would be incomplete. Partitioning by <code>accountId</code> ensures all messages for a given account are processed in arrival order within their partition.
+  </p>
+
+  <h3>Why does the StateGraph have an explicit execution limit?</h3>
+  <p>
+    Deeper investigation improves accuracy for borderline cases but has diminishing returns and unbounded cost. The business depth limit enforces a known maximum enrichment budget. The <code>maxSteps</code> guard is a separate safety net preventing accidental infinite cycles from a graph implementation bug.
+  </p>
+
+  <h3>How does an independent audit consumer improve separation of concerns?</h3>
+  <p>
+    The audit consumer is a separate Kafka consumer group subscribed to all pipeline topics. It consumes the same events as the business processors but writes exclusively to <code>audit_records</code>. This means audit is never blocked by business logic, and business logic failures never corrupt the audit trail. Application logs are operational diagnostics; audit records are the durable source of truth.
+  </p>
+
+  <h2>Reliability model</h2>
+  <p>The system's reliability contract is:</p>
+  <ul>
+    <li>Authenticated, rate-limited REST intake</li>
+    <li>Atomic PostgreSQL transaction + outbox</li>
+    <li>At-least-once Kafka delivery</li>
+    <li>Idempotent consumer inboxes (screening, investigation, case management, audit)</li>
+    <li>Bounded StateGraph with gRPC deadlines</li>
+    <li>Persistent investigation state</li>
+    <li>Versioned screening, scoring and decision policies</li>
+    <li>DLQ for bounded-retry exhaustion recovery</li>
+  </ul>
+  <p>
+    TradeSentry does <strong>not</strong> claim global exactly-once processing, global ordering across partitions, production regulatory filing or LLM-based risk decisions.
+  </p>
+
+  <h2>Observability</h2>
+  <p>
+    Correlation IDs are created at the API boundary and propagated through Kafka event contracts, so request lineage crosses asynchronous boundaries. Services expose Spring Boot Actuator health endpoints, Micrometer metrics with a Prometheus registry and OpenTelemetry tracing configuration.
+  </p>
+
+  <h2>Testing approach</h2>
+  <p>
+    The project uses Testcontainers for integration tests that spin up real PostgreSQL and Kafka instances. The <code>CaseDataClient</code> interface isolates the StateGraph from the gRPC transport, making investigation workflow logic testable in isolation with synthetic case data.
+  </p>
+
+  <h2>Current status and future work</h2>
+  <p>
+    The current implementation is an early-development reference (<code>0.1.0-SNAPSHOT</code>). The end-to-end pipeline is functional with deterministic synthetic rules, case data and scoring — these are the intended seams for future rule engines and model-based scoring. The docs/SCALING.md document describes the production-scale evolution separately from the current implementation.
+  </p>
+  <p>
+    Planned improvements include: cluster-wide rate limiting via Redis or API gateway, production OIDC/OAuth2 identity provider, selective gRPC retry policies, circuit breaking and bulkheads, hot-partition mitigation strategies and performance testing under load.
+  </p>
+
+</CaseStudyLayout>
